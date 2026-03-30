@@ -82,9 +82,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="doubts"
+        options={{
+          title: 'Doubts',
+          href: undefined,
+          tabBarIcon: ({ color }) => <AntDesign name="message" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="adduser"
         options={{
-          href: isAdmin ? undefined : null,
+          href: null,  // isAdmin ? undefined : null,
           title: 'Add User',
           tabBarIcon: ({ color }) => <FontAwesome name="user-plus" size={28} color={color}/>,
         }}
@@ -92,7 +100,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="notice"
         options={{
-          href: isAdmin ? undefined : null,
+          href: null,  // isAdmin ? undefined : null,
           title: 'Notice',
           tabBarIcon: ({ color }) => <FontAwesome6 name="notes-medical" size={28} color={color} />,
         }}
@@ -101,7 +109,7 @@ export default function TabLayout() {
         name="classes"
         options={{
           title: 'Classes',
-          href: isTeacher ? undefined : null,
+          href: null,  // isTeacher ? undefined : null,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="book.fill" color={color} />,
         }}
       />
@@ -109,7 +117,7 @@ export default function TabLayout() {
         name="timetable"
         options={{
           title: 'Timetable',
-          href: isAdmin ? undefined : null,
+          href: null,  // isAdmin ? undefined : null,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="book.fill" color={color} />,
         }}
       />
@@ -117,7 +125,7 @@ export default function TabLayout() {
         name="students"
         options={{
           title: 'Students',
-          href: isTeacher ? undefined : null,
+          href: null,  // isTeacher ? undefined : null,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="book.circle.fill" color={color} />,
         }}
       />
@@ -125,14 +133,14 @@ export default function TabLayout() {
         name="teachers"
         options={{
           title: 'Teachers',
-          href: isAdmin ? undefined : null,
+          href: null,  // isAdmin ? undefined : null,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.2.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="admins"
         options={{
-          href: isAdmin ? undefined : null,
+          href: null,  // isAdmin ? undefined : null,
           title: 'Admins',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="person.crop.circle.badge.checkmark" color={color} />

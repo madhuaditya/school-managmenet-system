@@ -1,7 +1,24 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError, AxiosInstance } from 'axios';
 import { API_BASE_URL, API_TIMEOUT, STORAGE_KEYS } from '@/src/constants/index';
-import { ApiResponse, AuthResponse, Attendance, Class, Complaint, Fee, Grade, Notice, Student, Subject, Teacher, Timetable, User } from '@/src/types';
+import {
+  ApiResponse,
+  AuthResponse,
+  Attendance,
+  ChatMessage,
+  ChatReply,
+  Class,
+  Complaint,
+  Fee,
+  Grade,
+  Notice,
+  PaginatedItems,
+  Student,
+  Subject,
+  Teacher,
+  Timetable,
+  User,
+} from '@/src/types';
 import {useAuthStore} from '@/src/store/auth.store';
 type RefreshResponse = ApiResponse<{ accessToken: string }>;
 
@@ -369,6 +386,22 @@ class ApiService {
     return this.get('/profile/me');
   }
 
+  async getSchoolInfo(id: string): Promise<
+    ApiResponse<{
+      _id: string;
+      schoolId?: string;
+      schoolName: string;
+      email?: string;
+      address?: string;
+      city?: string;
+      state?: string;
+      pinCode?: string;
+      image?: string;
+    }>
+  > {
+    return this.get(`/auth/school/${id}`);
+  }
+
   async getSchoolOverview(): Promise<
     ApiResponse<{ totalAdmins: number; totalClasses: number; totalStudents: number }>
   > {
@@ -479,6 +512,39 @@ class ApiService {
   // Backward-compatible helper
   async getTimetable(classId: string): Promise<ApiResponse<Timetable[]>> {
     return this.getTimetableByClass(classId);
+  }
+
+  // Doubts/Chat APIs
+  async createChat(msg: string): Promise<ApiResponse<ChatMessage>> {
+    return this.post('/chat/create', { msg });
+  }
+
+  async deleteChat(id: string): Promise<ApiResponse<null>> {
+    return this.del(`/chat/${id}`);
+  }
+
+  async getMyChats(): Promise<ApiResponse<ChatMessage[]>> {
+    return this.get('/chat/my');
+  }
+
+  async getSchoolChats(params?: { page?: number; size?: number }): Promise<ApiResponse<PaginatedItems<ChatMessage>>> {
+    return this.get('/chat', params);
+  }
+
+  async createReply(chatId: string, msg: string): Promise<ApiResponse<ChatReply>> {
+    return this.post('/reply/create', { chatId, msg });
+  }
+
+  async deleteReply(id: string): Promise<ApiResponse<null>> {
+    return this.del(`/reply/${id}`);
+  }
+
+  async getMyReplies(): Promise<ApiResponse<ChatReply[]>> {
+    return this.get('/reply/my');
+  }
+
+  async getRepliesByChat(chatId: string, params?: { page?: number; size?: number }): Promise<ApiResponse<PaginatedItems<ChatReply>>> {
+    return this.get(`/reply/chat/${chatId}`, params);
   }
 
   

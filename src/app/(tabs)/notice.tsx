@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { apiService } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
@@ -33,6 +35,7 @@ export default function NoticeTab() {
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
   const [validity, setValidity] = useState('');
+  const [showValidityPicker, setShowValidityPicker] = useState(false);
   const [notices, setNotices] = useState<NoticeItem[]>([]);
 
   const isEditing = useMemo(() => !!editingId, [editingId]);
@@ -61,6 +64,23 @@ export default function NoticeTab() {
     setTitle('');
     setDetails('');
     setValidity('');
+    setShowValidityPicker(false);
+  };
+
+  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+  const parseDate = (value: string) => {
+    const parsed = value ? new Date(value) : new Date();
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
+
+  const onValidityDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowValidityPicker(false);
+    }
+
+    if (event.type === 'dismissed' || !selectedDate) return;
+    setValidity(formatDate(selectedDate));
   };
 
   const onSubmit = async () => {
@@ -141,14 +161,26 @@ export default function NoticeTab() {
           editable={!saving}
           multiline
         />
-        <TextInput
-          style={[styles.input, { borderColor: theme.icon, color: theme.text }]}
-          placeholder="Validity (YYYY-MM-DD)"
-          placeholderTextColor={theme.icon}
-          value={validity}
-          onChangeText={setValidity}
-          editable={!saving}
-        />
+
+        <ThemedText style={styles.fieldLabel}>Validity Date</ThemedText>
+        <Pressable
+          style={[styles.dateInputButton, { borderColor: theme.icon }]}
+          onPress={() => setShowValidityPicker(true)}
+          disabled={saving}
+        >
+          <ThemedText style={[styles.dateInputText, { color: validity ? theme.text : theme.icon }]}>
+            {validity || 'Select validity date'}
+          </ThemedText>
+        </Pressable>
+        {showValidityPicker ? (
+          <DateTimePicker
+            value={parseDate(validity)}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            minimumDate={new Date()}
+            onChange={onValidityDateChange}
+          />
+        ) : null}
 
         <View style={styles.row}>
           <Pressable style={[styles.primaryBtn, saving && styles.disabled]} onPress={onSubmit} disabled={saving}>
@@ -209,6 +241,24 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 90,
     textAlignVertical: 'top',
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: -2,
+    opacity: 0.8,
+  },
+  dateInputButton: {
+    borderWidth: 1,
+    borderRadius: 8,
+    minHeight: 42,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  dateInputText: {
+    fontSize: 14,
   },
   row: { flexDirection: 'row', gap: 8, marginTop: 4 },
   primaryBtn: {

@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
 
 import { apiService } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuthStore } from '@/src/store/auth.store';
 
 interface OverviewStats {
   totalAdmins: number;
@@ -15,6 +17,18 @@ interface OverviewStats {
   totalTeachers?: number;
   totalSubjects?: number;
   totalStaff?: number;
+}
+
+interface SchoolInfo {
+  _id: string;
+  schoolId?: string;
+  schoolName: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pinCode?: string;
+  image?: string;
 }
 
 interface NoticeItem {
@@ -54,16 +68,45 @@ interface TimetableItem {
   }>;
 }
 
+type AppRoute = '/adduser' | '/notice' | '/classes' | '/timetable' | '/students' | '/teachers' | '/admins' | '/myattendance' | '/doubts';
+
+interface RouteCard {
+  route: AppRoute;
+  label: string;
+  icon: ComponentProps<typeof MaterialIcons>['name'];
+  roles: string[];
+  color: string;
+}
+
 const DAYS: DayFilter[] = ['All', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+const ROUTE_CARDS: RouteCard[] = [
+  { route: '/doubts', label: 'Doubts', icon: 'forum', roles: ['admin', 'teacher', 'student', 'staff'], color: '#0EA5E9' },
+  { route: '/adduser', label: 'Add User', icon: 'person-add', roles: ['admin'], color: '#4CAF50' },
+  { route: '/notice', label: 'Notices', icon: 'notifications', roles: ['admin'], color: '#FF9800' },
+  { route: '/classes', label: 'Classes', icon: 'menu-book', roles: ['teacher', 'admin'], color: '#2196F3' },
+  { route: '/timetable', label: 'Timetable', icon: 'schedule', roles: ['admin', 'teacher'], color: '#9C27B0' },
+  { route: '/students', label: 'Students', icon: 'school', roles: ['teacher', 'admin'], color: '#00BCD4' },
+  { route: '/teachers', label: 'Teachers', icon: 'groups', roles: ['admin'], color: '#E91E63' },
+  { route: '/admins', label: 'Admins', icon: 'admin-panel-settings', roles: ['admin'], color: '#F44336' },
+  { route: '/myattendance', label: 'Attendance', icon: 'check-circle', roles: ['student', 'staff'], color: '#673AB7' },
+];
+
+
 export default function HomeScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
+
+  const user = useAuthStore((state) => state.user);
+  const role = typeof user?.role === 'string' ? user.role : user?.role?.role;
+  const schoolId = typeof user?.school === 'string' ? user.school : user?.school?._id;
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<OverviewStats | null>(null);
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [timetables, setTimetables] = useState<TimetableItem[]>([]);
@@ -83,11 +126,12 @@ export default function HomeScreen() {
       }
       setError(null);
 
-      const [overviewResponse, noticeResponse, classesResponse, timetableResponse] = await Promise.all([
+      const [overviewResponse, noticeResponse, classesResponse, timetableResponse, schoolResponse] = await Promise.all([
         apiService.getSchoolOverview(),
         apiService.getValidNotices(),
         apiService.getClasses(),
         apiService.getAllTimetables(),
+        schoolId ? apiService.getSchoolInfo(schoolId) : Promise.resolve(null),
       ]);
 
       if (!overviewResponse.success || !overviewResponse.data) {
@@ -106,6 +150,10 @@ export default function HomeScreen() {
         throw new Error(timetableResponse.msg || 'Failed to fetch timetable');
       }
 
+      if (schoolResponse && schoolResponse.success && schoolResponse.data) {
+        setSchoolInfo(schoolResponse.data);
+      }
+
       setStats(overviewResponse.data);
       setNotices(Array.isArray(noticeResponse.data) ? (noticeResponse.data as unknown as NoticeItem[]) : []);
       setClasses(Array.isArray(classesResponse.data) ? (classesResponse.data as unknown as ClassItem[]) : []);
@@ -116,7 +164,7 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [schoolId]);
 
   useEffect(() => {
     void loadOverview();
@@ -212,133 +260,200 @@ export default function HomeScreen() {
     { label: 'Total Staff', value: stats?.totalStaff ?? 0, icon: 'badge' },
   ] as const;
 
-  if (loading) {
-    return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator size="large" color={theme.tint} />
-      </ThemedView>
-    );
-  }
+  const visibleRoutes = useMemo(() => {
+    if (!role) return [];
+    return ROUTE_CARDS.filter((card) => card.roles.includes(role));
+  }, [role]);
+
+  const handleNavigate = (route: AppRoute) => {
+    router.push(route);
+  };
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void loadOverview(true)} />}>
-      <ThemedText style={styles.subtitle}>School Overview</ThemedText>
-
       {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
 
-      <ThemedView style={[styles.statsBox, { borderColor: theme.icon, backgroundColor: theme.background }]}>
-        {overviewItems.map((item) => (
-          <View key={item.label} style={styles.statsRow}>
-            <View style={styles.statsLeft}>
-              <View style={[styles.iconWrap, { backgroundColor: `${theme.tint}1f` }]}>
-                <MaterialIcons name={item.icon} size={18} color={theme.tint} />
-              </View>
-              <ThemedText style={styles.cardLabel}>{item.label}</ThemedText>
-            </View>
-            <ThemedText type="title">{item.value}</ThemedText>
-          </View>
-        ))}
+      <ThemedView style={[styles.schoolInfoBox, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+        <ThemedText type="subtitle">School Info</ThemedText>
+        <ThemedText style={styles.schoolInfoText}>Name: {schoolInfo?.schoolName || 'N/A'}</ThemedText>
+        <ThemedText style={styles.schoolInfoText}>School ID: {schoolInfo?.schoolId || 'N/A'}</ThemedText>
+        <ThemedText style={styles.schoolInfoText}>Email: {schoolInfo?.email || 'N/A'}</ThemedText>
+        <ThemedText style={styles.schoolInfoText}>
+          Address: {[schoolInfo?.address, schoolInfo?.city, schoolInfo?.state, schoolInfo?.pinCode].filter(Boolean).join(', ') || 'N/A'}
+        </ThemedText>
       </ThemedView>
 
-      <ThemedText type="subtitle" style={styles.noticeHeading}>Valid Notices (Latest to Old)</ThemedText>
-      {notices.length === 0 ? (
-        <ThemedText style={styles.emptyNoticeText}>No valid notices available</ThemedText>
+      <ThemedText style={styles.subtitle}>School Overview</ThemedText>
+
+      {loading ? (
+        <ThemedView style={styles.centered}>
+          <ActivityIndicator size="large" color={theme.tint} />
+        </ThemedView>
       ) : (
-        notices.map((item) => (
-          <ThemedView key={item._id} style={[styles.noticeCard, { borderColor: theme.icon, backgroundColor: theme.background }]}>
-            <ThemedText type="defaultSemiBold">{item.title}</ThemedText>
-            <ThemedText>{item.details}</ThemedText>
-            <ThemedText style={styles.noticeMeta}>
-              Date: {new Date(item.date).toLocaleDateString()} | Valid till: {new Date(item.validity).toLocaleDateString()}
-            </ThemedText>
-          </ThemedView>
-        ))
-      )}
-
-      <ThemedText type="subtitle" style={styles.noticeHeading}>Timetable</ThemedText>
-      <ThemedText style={styles.filterHint}>Filter by school/class, day and subject</ThemedText>
-
-      <View style={styles.filterRow}>
-        <Pressable
-          onPress={() => {
-            setViewMode('school');
-            setSelectedClassId(null);
-          }}
-          style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: viewMode === 'school' ? theme.tint : theme.background }]}>
-          <ThemedText style={{ color: viewMode === 'school' ? '#fff' : theme.text, fontWeight: '600' }}>Own School</ThemedText>
-        </Pressable>
-        <Pressable
-          onPress={() => setViewMode('class')}
-          style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: viewMode === 'class' ? theme.tint : theme.background }]}>
-          <ThemedText style={{ color: viewMode === 'class' ? '#fff' : theme.text, fontWeight: '600' }}>School Class</ThemedText>
-        </Pressable>
-      </View>
-
-      {viewMode === 'class' ? (
-        <View style={styles.filterRow}>
-          {classes.length === 0 ? (
-            <ThemedText style={styles.emptyNoticeText}>No classes found</ThemedText>
-          ) : (
-            classes.map((cls) => (
-              <Pressable
-                key={cls._id}
-                onPress={() => setSelectedClassId(cls._id)}
-                style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedClassId === cls._id ? theme.tint : theme.background }]}> 
-                <ThemedText style={{ color: selectedClassId === cls._id ? '#fff' : theme.text, fontWeight: '600' }}>
-                  {cls.name}{cls.section ? ` (${cls.section})` : ''}
-                </ThemedText>
-              </Pressable>
-            ))
-          )}
-        </View>
-      ) : null}
-
-      <View style={styles.filterRow}>
-        {DAYS.map((day) => (
-          <Pressable
-            key={day}
-            onPress={() => setSelectedDay(day)}
-            style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedDay === day ? theme.tint : theme.background }]}>
-            <ThemedText style={{ color: selectedDay === day ? '#fff' : theme.text, fontWeight: '600' }}>{day}</ThemedText>
-          </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.filterRow}>
-        <Pressable
-          onPress={() => setSelectedSubjectId('All')}
-          style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedSubjectId === 'All' ? theme.tint : theme.background }]}>
-          <ThemedText style={{ color: selectedSubjectId === 'All' ? '#fff' : theme.text, fontWeight: '600' }}>All Subjects</ThemedText>
-        </Pressable>
-        {subjectOptions.map((subject) => (
-          <Pressable
-            key={subject.id}
-            onPress={() => setSelectedSubjectId(subject.id)}
-            style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedSubjectId === subject.id ? theme.tint : theme.background }]}>
-            <ThemedText style={{ color: selectedSubjectId === subject.id ? '#fff' : theme.text, fontWeight: '600' }}>{subject.label}</ThemedText>
-          </Pressable>
-        ))}
-      </View>
-
-      {tableLoading ? (
-        <ThemedView style={styles.centered}><ActivityIndicator size="small" color={theme.tint} /></ThemedView>
-      ) : filteredTimetables.length === 0 ? (
-        <ThemedText style={styles.emptyNoticeText}>No timetable found for selected filters</ThemedText>
-      ) : (
-        filteredTimetables.map((item) => (
-          <ThemedView key={item._id} style={[styles.noticeCard, { borderColor: theme.icon, backgroundColor: theme.background }]}>
-            <ThemedText type="defaultSemiBold">{item.name || 'Timetable'} | {item.day || 'Day'}</ThemedText>
-            <ThemedText style={styles.noticeMeta}>Class: {getClassName(item)}</ThemedText>
-            {(item.periods || []).map((period, idx) => (
-              <ThemedText key={`${item._id}-${idx}`}>
-                {idx + 1}. {getSubjectName(period.subject)} | {period.startTime} - {period.endTime}
-              </ThemedText>
+        <>
+          <ThemedView style={[styles.statsBox, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+            {overviewItems.map((item) => (
+              <View key={item.label} style={styles.statsRow}>
+                <View style={styles.statsLeft}>
+                  <View style={[styles.iconWrap, { backgroundColor: `${theme.tint}1f` }]}>
+                    <MaterialIcons name={item.icon} size={18} color={theme.tint} />
+                  </View>
+                  <ThemedText style={styles.cardLabel}>{item.label}</ThemedText>
+                </View>
+                <ThemedText type="title">{item.value}</ThemedText>
+              </View>
             ))}
           </ThemedView>
-        ))
+
+                    <ThemedText type="subtitle" style={styles.noticeHeading}>Notices</ThemedText>
+          {notices.length === 0 ? (
+            <ThemedText style={styles.emptyNoticeText}>No notices available</ThemedText>
+          ) : (
+            <FlatList
+              data={notices}
+              renderItem={({ item }) => (
+                <ThemedView style={[styles.noticeCard, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+                  <ThemedText type="defaultSemiBold">{item.title}</ThemedText>
+                  <ThemedText>{item.details}</ThemedText>
+                  <ThemedText style={styles.noticeMeta}>
+                    Date: {new Date(item.date).toLocaleDateString()} | Valid till: {new Date(item.validity).toLocaleDateString()}
+                  </ThemedText>
+                </ThemedView>
+              )}
+              keyExtractor={(item) => item._id}
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+              scrollEventThrottle={16}
+              contentContainerStyle={styles.noticeListContainer}
+            />
+          )}
+
+          <ThemedText type="subtitle" style={styles.quickActionsHeading}>Quick Actions</ThemedText>
+          {visibleRoutes.length === 0 ? (
+            <ThemedText style={styles.emptyNoticeText}>No actions available for your role</ThemedText>
+          ) : (
+            <FlatList
+              data={visibleRoutes}
+              renderItem={({ item: card }) => (
+                <Pressable
+                  onPress={() => handleNavigate(card.route)}
+                  style={({ pressed }) => [
+                    styles.routeCard,
+                    {
+                      backgroundColor: card.color,
+                      opacity: pressed ? 0.8 : 1,
+                    },
+                  ]}>
+                  <MaterialIcons name={card.icon} size={24} color="#fff" />
+                  <ThemedText style={styles.routeCardLabel}>{card.label}</ThemedText>
+                </Pressable>
+              )}
+              keyExtractor={(card) => card.route}
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+              scrollEventThrottle={16}
+              contentContainerStyle={styles.routeCardsContainer}
+            />
+          )}
+
+
+
+          <ThemedText type="subtitle" style={styles.noticeHeading}>Timetable</ThemedText>
+          <ThemedText style={styles.filterHint}>Filter by school/class, day and subject</ThemedText>
+
+          <View style={styles.filterRow}>
+            <Pressable
+              onPress={() => {
+                setViewMode('school');
+                setSelectedClassId(null);
+              }}
+              style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: viewMode === 'school' ? theme.tint : theme.background }]}>
+              <ThemedText style={{ color: viewMode === 'school' ? '#fff' : theme.text, fontWeight: '600' }}>Own School</ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={() => setViewMode('class')}
+              style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: viewMode === 'class' ? theme.tint : theme.background }]}>
+              <ThemedText style={{ color: viewMode === 'class' ? '#fff' : theme.text, fontWeight: '600' }}>School Class</ThemedText>
+            </Pressable>
+          </View>
+
+          {viewMode === 'class' ? (
+            <View style={styles.filterRow}>
+              {classes.length === 0 ? (
+                <ThemedText style={styles.emptyNoticeText}>No classes found</ThemedText>
+              ) : (
+                classes.map((cls) => (
+                  <Pressable
+                    key={cls._id}
+                    onPress={() => setSelectedClassId(cls._id)}
+                    style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedClassId === cls._id ? theme.tint : theme.background }]}>
+                    <ThemedText style={{ color: selectedClassId === cls._id ? '#fff' : theme.text, fontWeight: '600' }}>
+                      {cls.name}{cls.section ? ` (${cls.section})` : ''}
+                    </ThemedText>
+                  </Pressable>
+                ))
+              )}
+            </View>
+          ) : null}
+
+          <View style={styles.filterRow}>
+            {DAYS.map((day) => (
+              <Pressable
+                key={day}
+                onPress={() => setSelectedDay(day)}
+                style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedDay === day ? theme.tint : theme.background }]}>
+                <ThemedText style={{ color: selectedDay === day ? '#fff' : theme.text, fontWeight: '600' }}>{day}</ThemedText>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={styles.filterRow}>
+            <Pressable
+              onPress={() => setSelectedSubjectId('All')}
+              style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedSubjectId === 'All' ? theme.tint : theme.background }]}>
+              <ThemedText style={{ color: selectedSubjectId === 'All' ? '#fff' : theme.text, fontWeight: '600' }}>All Subjects</ThemedText>
+            </Pressable>
+            {subjectOptions.map((subject) => (
+              <Pressable
+                key={subject.id}
+                onPress={() => setSelectedSubjectId(subject.id)}
+                style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedSubjectId === subject.id ? theme.tint : theme.background }]}>
+                <ThemedText style={{ color: selectedSubjectId === subject.id ? '#fff' : theme.text, fontWeight: '600' }}>{subject.label}</ThemedText>
+              </Pressable>
+            ))}
+          </View>
+
+          {tableLoading ? (
+            <ThemedView style={styles.centered}>
+              <ActivityIndicator size="small" color={theme.tint} />
+            </ThemedView>
+          ) : filteredTimetables.length === 0 ? (
+            <ThemedText style={styles.emptyNoticeText}>No timetable found for selected filters</ThemedText>
+          ) : (
+            <FlatList
+              data={filteredTimetables}
+              horizontal={true}
+              keyExtractor={(item) => item._id}
+              showsHorizontalScrollIndicator={false}
+              scrollEventThrottle={16}
+              contentContainerStyle={styles.timetableListContainer}
+              renderItem={({ item }) => (
+                <ThemedView style={[styles.timetableCard, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+                  <ThemedText type="defaultSemiBold">{item.name || 'Timetable'} | {item.day || 'Day'}</ThemedText>
+                  <ThemedText style={styles.noticeMeta}>Class: {getClassName(item)}</ThemedText>
+                  {(item.periods || []).map((period, idx) => (
+                    <ThemedText key={`${item._id}-${idx}`}>
+                      {idx + 1}. {getSubjectName(period.subject)} | {period.startTime} - {period.endTime}
+                    </ThemedText>
+                  ))}
+                </ThemedView>
+              )}
+            />
+          )}
+        </>
       )}
     </ScrollView>
   );
@@ -373,6 +488,17 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
+  schoolInfoBox: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
+    marginTop: 8,
+  },
+  schoolInfoText: {
+    opacity: 0.85,
+    fontSize: 13,
+  },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -395,8 +521,35 @@ const styles = StyleSheet.create({
     opacity: 0.75,
     fontSize: 13,
   },
+  quickActionsHeading: {
+    marginTop: 8,
+  },
+  routeCardsContainer: {
+    paddingRight: 16,
+    gap: 12,
+    marginVertical: 8,
+  },
+  routeCard: {
+    width: 120,
+    minWidth: 120,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  routeCardLabel: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 12,
+    textAlign: 'center',
+  },
   noticeHeading: {
     marginTop: 8,
+  },
+  noticeListContainer: {
+    paddingRight: 16,
+    gap: 12,
   },
   emptyNoticeText: {
     opacity: 0.7,
@@ -407,10 +560,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     gap: 8,
+    width: 280,
+    minWidth: 280,
   },
   noticeMeta: {
     opacity: 0.65,
     fontSize: 12,
+  },
+  timetableListContainer: {
+    paddingRight: 16,
+    gap: 12,
+  },
+  timetableCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 8,
+    width: 300,
+    minWidth: 300,
   },
   filterHint: {
     opacity: 0.75,

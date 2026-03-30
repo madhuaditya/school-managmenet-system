@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   Modal,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { apiService } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
@@ -95,6 +97,15 @@ export default function AddUserScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [classModalVisible, setClassModalVisible] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
+  const [showDobPicker, setShowDobPicker] = useState(false);
+  const [showAdmissionPicker, setShowAdmissionPicker] = useState(false);
+
+  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+  const parseDate = (value: string) => {
+    const parsed = value ? new Date(value) : new Date();
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
 
   useEffect(() => {
     if (userType === 'student') {
@@ -207,7 +218,19 @@ export default function AddUserScreen() {
       rollNumber: '',
     });
     setSelectedClass(null);
+    setShowDobPicker(false);
+    setShowAdmissionPicker(false);
     setErrors({});
+  };
+
+  const onDateChange = (field: 'dateOfBirth' | 'dateOfAdmission') => (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      if (field === 'dateOfBirth') setShowDobPicker(false);
+      if (field === 'dateOfAdmission') setShowAdmissionPicker(false);
+    }
+
+    if (event.type === 'dismissed' || !selectedDate) return;
+    updateFormField(field, formatDate(selectedDate));
   };
 
   const handleAddUser = async () => {
@@ -353,7 +376,31 @@ export default function AddUserScreen() {
               {renderFormField('Parent Contact', 'parentContact', 'Enter parent contact', {
                 keyboardType: 'phone-pad',
               })}
-              {renderFormField('Date of Birth', 'dateOfBirth', 'YYYY-MM-DD')}
+
+              <View style={styles.fieldContainer}>
+                <ThemedText style={styles.label}>Date of Birth</ThemedText>
+                <TouchableOpacity
+                  style={[styles.dateInputButton, { borderColor: errors.dateOfBirth ? '#ff6b6b' : theme.tabIconDefault }]}
+                  onPress={() => setShowDobPicker(true)}
+                  disabled={submitting}
+                >
+                  <ThemedText style={[styles.dateInputText, { color: formData.dateOfBirth ? theme.text : theme.tabIconDefault }]}>
+                    {formData.dateOfBirth || 'Select date of birth'}
+                  </ThemedText>
+                  <MaterialCommunityIcons name="calendar" size={20} color={theme.text} />
+                </TouchableOpacity>
+                {showDobPicker ? (
+                  <DateTimePicker
+                    value={parseDate(formData.dateOfBirth)}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    maximumDate={new Date()}
+                    onChange={onDateChange('dateOfBirth')}
+                  />
+                ) : null}
+                {errors.dateOfBirth ? <ThemedText style={styles.errorText}>{errors.dateOfBirth}</ThemedText> : null}
+              </View>
+
               {renderFormField('Roll Number', 'rollNumber', 'Enter roll number')}
 
               <View style={styles.fieldContainer}>
@@ -428,7 +475,29 @@ export default function AddUserScreen() {
               </View>
 
               <ThemedText style={styles.sectionSubtitle}>Auto-filled From Class</ThemedText>
-              {renderFormField('Date of Admission', 'dateOfAdmission', 'Auto from class', { editable: false })}
+              <View style={styles.fieldContainer}>
+                <ThemedText style={styles.label}>Date of Admission</ThemedText>
+                <TouchableOpacity
+                  style={[styles.dateInputButton, { borderColor: errors.dateOfAdmission ? '#ff6b6b' : theme.tabIconDefault }]}
+                  onPress={() => setShowAdmissionPicker(true)}
+                  disabled={submitting}
+                >
+                  <ThemedText style={[styles.dateInputText, { color: formData.dateOfAdmission ? theme.text : theme.tabIconDefault }]}>
+                    {formData.dateOfAdmission || 'Select date of admission'}
+                  </ThemedText>
+                  <MaterialCommunityIcons name="calendar" size={20} color={theme.text} />
+                </TouchableOpacity>
+                {showAdmissionPicker ? (
+                  <DateTimePicker
+                    value={parseDate(formData.dateOfAdmission)}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    maximumDate={new Date()}
+                    onChange={onDateChange('dateOfAdmission')}
+                  />
+                ) : null}
+                {errors.dateOfAdmission ? <ThemedText style={styles.errorText}>{errors.dateOfAdmission}</ThemedText> : null}
+              </View>
             </>
           )}
 
@@ -583,6 +652,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   dropdownButtonText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  dateInputButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 44,
+    backgroundColor: '#f5f5f5',
+  },
+  dateInputText: {
     fontSize: 14,
     flex: 1,
   },

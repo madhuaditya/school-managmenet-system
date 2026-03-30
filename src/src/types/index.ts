@@ -162,6 +162,43 @@ export interface Timetable {
   updatedAt?: string;
 }
 
+// Chat/Doubts Types
+export interface ChatMessage {
+  _id: string;
+  msg: string;
+  user: {
+    _id: string;
+    name?: string;
+    image?: string;
+  };
+  school?: string | { _id: string; schoolName?: string };
+  replyCount?: number;
+  likes?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ChatReply {
+  _id: string;
+  msg: string;
+  user: {
+    _id: string;
+    name?: string;
+    image?: string;
+  };
+  chat?: string | { _id: string; msg?: string };
+  school?: string | { _id: string; schoolName?: string };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PaginatedItems<T> {
+  data: T[];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
+}
+
 // Authentication Types
 export interface LoginCredentials {
   email: string;

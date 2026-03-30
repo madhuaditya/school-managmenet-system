@@ -1,5 +1,14 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  useColorScheme,
+} from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { useRouter } from 'expo-router';
 import { isValidEmail, isValidPassword } from '@/src/utils/helpers';
@@ -7,12 +16,35 @@ import { apiService } from '@/api/client';
 import { useAuthStore } from '@/src/store/auth.store';
 import { LoginCredentials } from '@/src/types';
 
+const lightColors = {
+  bg: "#F9FAFB",
+  card: "#FFFFFF",
+  primary: "#2563EB",
+  text: "#111827",
+  subText: "#6B7280",
+  border: "#E5E7EB",
+  error: "#DC2626",
+};
+
+const darkColors = {
+  bg: "#0F172A",
+  card: "#1E293B",
+  primary: "#3B82F6",
+  text: "#E5E7EB",
+  subText: "#9CA3AF",
+  border: "#334155",
+  error: "#F87171",
+};
+
 const LoginScreen: React.FC = () => {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
   const isLoading = useAuthStore((state) => state.isLoading);
   const [forgotEmail, setForgotEmail] = React.useState('');
   const [sendingForgot, setSendingForgot] = React.useState(false);
+
+  const scheme = useColorScheme();
+  const colors = scheme === 'dark' ? darkColors : lightColors;
 
   const {
     control,
@@ -59,20 +91,20 @@ const LoginScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>School MIS</Text>
-        <Text style={styles.subtitle}>Management System</Text>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <View style={[styles.content, { backgroundColor: colors.card }]}>
+        <Text style={[styles.title, { color: colors.primary }]}>School MIS</Text>
+        <Text style={[styles.subtitle, { color: colors.subText }]}>Management System</Text>
 
-        <View style={styles.switchBar}>
-          <TouchableOpacity style={[styles.switchItem, styles.switchItemActive]} disabled>
-            <Text style={[styles.switchText, styles.switchTextActive]}>Login</Text>
+        <View style={[styles.switchBar, { borderColor: colors.border }]}>
+          <TouchableOpacity style={[styles.switchItem, { backgroundColor: colors.primary }]} disabled>
+            <Text style={[styles.switchTextActive]}>Login</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.switchItem} onPress={() => router.push('/school-register')}>
-            <Text style={styles.switchText}>Add School</Text>
+            <Text style={[styles.switchText, { color: colors.primary }]}>Add School</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.switchItem} onPress={() => router.push('/school-login')}>
-            <Text style={styles.switchText}>School Login</Text>
+            <Text style={[styles.switchText, { color: colors.primary }]}>School Login</Text>
           </TouchableOpacity>
         </View>
 
@@ -86,9 +118,16 @@ const LoginScreen: React.FC = () => {
             }}
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[styles.input, errors.email && styles.inputError]}
+                style={[
+                  styles.input,
+                  {
+                    borderColor: errors.email ? colors.error : colors.border,
+                    color: colors.text,
+                    backgroundColor: scheme === 'dark' ? '#020617' : '#fff',
+                  },
+                ]}
                 placeholder="Email Address"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.subText}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -98,7 +137,7 @@ const LoginScreen: React.FC = () => {
               />
             )}
           />
-          {errors.email ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
+          {errors.email && <Text style={[styles.errorText, { color: colors.error }]}>{errors.email.message}</Text>}
 
           <Controller
             control={control}
@@ -109,9 +148,16 @@ const LoginScreen: React.FC = () => {
             }}
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[styles.input, errors.password && styles.inputError]}
+                style={[
+                  styles.input,
+                  {
+                    borderColor: errors.password ? colors.error : colors.border,
+                    color: colors.text,
+                    backgroundColor: scheme === 'dark' ? '#020617' : '#fff',
+                  },
+                ]}
                 placeholder="Password"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.subText}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -120,25 +166,32 @@ const LoginScreen: React.FC = () => {
               />
             )}
           />
-          {errors.password ? <Text style={styles.errorText}>{errors.password.message}</Text> : null}
+          {errors.password && <Text style={[styles.errorText, { color: colors.error }]}>{errors.password.message}</Text>}
 
           <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
+            style={[
+              styles.button,
+              { backgroundColor: colors.primary },
+              isLoading && styles.buttonDisabled,
+            ]}
             onPress={handleSubmit(onSubmit)}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Login</Text>
-            )}
+            {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
           </TouchableOpacity>
 
           <View style={styles.forgotWrap}>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  borderColor: colors.border,
+                  color: colors.text,
+                  backgroundColor: scheme === 'dark' ? '#020617' : '#fff',
+                },
+              ]}
               placeholder="Forgot password? Enter your email"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.subText}
               value={forgotEmail}
               onChangeText={setForgotEmail}
               keyboardType="email-address"
@@ -148,14 +201,23 @@ const LoginScreen: React.FC = () => {
             <TouchableOpacity
               style={[styles.forgotButton, (sendingForgot || isLoading) && styles.buttonDisabled]}
               onPress={onForgotPassword}
-              disabled={sendingForgot || isLoading}>
-              {sendingForgot ? <ActivityIndicator color="#1976d2" /> : <Text style={styles.forgotButtonText}>Send Reset Link</Text>}
+              disabled={sendingForgot || isLoading}
+            >
+              {sendingForgot ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <Text style={[styles.forgotButtonText, { color: colors.primary }]}>
+                  Send Reset Link
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Need an account? Contact your admin.</Text>
+          <Text style={[styles.footerText, { color: colors.subText }]}>
+            Need an account? Contact your admin.
+          </Text>
         </View>
       </View>
     </View>
@@ -165,85 +227,69 @@ const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
   content: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1976d2',
+    fontSize: 30,
+    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 22,
   },
   form: {
-    marginBottom: 18,
+    marginBottom: 16,
   },
   switchBar: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: '#d0d7de',
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 18,
   },
   switchItem: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  switchItemActive: {
-    backgroundColor: '#1976d2',
   },
   switchText: {
-    color: '#1976d2',
     fontWeight: '600',
     fontSize: 12,
   },
   switchTextActive: {
     color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 10,
-    fontSize: 16,
-    color: '#000',
-  },
-  inputError: {
-    borderColor: '#d93025',
+    fontSize: 15,
   },
   errorText: {
-    color: '#d93025',
     fontSize: 12,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   button: {
-    backgroundColor: '#1976d2',
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 6,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -251,28 +297,25 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
+  },
+  forgotWrap: {
+    marginTop: 14,
+  },
+  forgotButton: {
+    marginTop: 6,
+    alignSelf: 'flex-end',
+  },
+  forgotButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   footer: {
     alignItems: 'center',
+    marginTop: 8,
   },
   footerText: {
-    color: '#999',
     fontSize: 12,
-  },
-  forgotWrap: {
-    marginTop: 12,
-  },
-  forgotButton: {
-    marginTop: 4,
-    alignSelf: 'flex-end',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  forgotButtonText: {
-    color: '#1976d2',
-    fontSize: 13,
-    fontWeight: '700',
   },
 });
 
