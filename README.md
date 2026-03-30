@@ -1,4 +1,6 @@
 # Welcome to your Expo app 👋
+## donload App 
+[`school-management-system`](https://expo.dev/artifacts/eas/eJoGtv3GsHJWDJzQEmv8yc.apk)
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
