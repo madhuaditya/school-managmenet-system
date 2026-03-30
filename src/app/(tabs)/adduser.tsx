@@ -534,175 +534,374 @@ export default function AddUserScreen() {
   );
 }
 
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     paddingBottom: 20,
+//   },
+//   typeSelector: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-around',
+//     paddingHorizontal: 10,
+//     paddingVertical: 15,
+//     gap: 8,
+//   },
+//   typeButton: {
+//     flex: 1,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     paddingVertical: 10,
+//     paddingHorizontal: 8,
+//     borderRadius: 8,
+//     borderWidth: 1,
+//     borderColor: '#ccc',
+//     gap: 4,
+//   },
+//   typeButtonActive: {
+//     borderWidth: 0,
+//   },
+//   typeButtonText: {
+//     fontSize: 12,
+//     fontWeight: '500',
+//     textAlign: 'center',
+//   },
+//   typeButtonTextActive: {
+//     color: '#fff',
+//   },
+//   formContainer: {
+//     paddingHorizontal: 16,
+//     paddingVertical: 10,
+//   },
+//   sectionTitle: {
+//     fontSize: 18,
+//     fontWeight: 'bold',
+//     marginBottom: 15,
+//     marginTop: 10,
+//   },
+//   sectionSubtitle: {
+//     fontSize: 14,
+//     fontWeight: '600',
+//     marginTop: 15,
+//     marginBottom: 10,
+//     opacity: 0.7,
+//   },
+//   fieldContainer: {
+//     marginBottom: 15,
+//   },
+//   label: {
+//     fontSize: 14,
+//     fontWeight: '600',
+//     marginBottom: 6,
+//   },
+//   input: {
+//     borderWidth: 1,
+//     borderRadius: 8,
+//     paddingHorizontal: 12,
+//     paddingVertical: 10,
+//     fontSize: 14,
+//     minHeight: 44,
+//   },
+//   loadingContainer: {
+//     height: 44,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   errorText: {
+//     color: '#ff6b6b',
+//     fontSize: 12,
+//     marginTop: 4,
+//   },
+//   submitButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     paddingVertical: 12,
+//     borderRadius: 8,
+//     marginTop: 20,
+//     gap: 8,
+//   },
+//   submitButtonText: {
+//     color: '#fff',
+//     fontSize: 16,
+//     fontWeight: '600',
+//   },
+//   resetButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     paddingVertical: 12,
+//     borderRadius: 8,
+//     marginTop: 10,
+//     borderWidth: 2,
+//     gap: 8,
+//   },
+//   resetButtonText: {
+//     fontSize: 16,
+//     fontWeight: '600',
+//   },
+//   dropdownButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//     borderWidth: 1,
+//     borderRadius: 8,
+//     paddingHorizontal: 12,
+//     paddingVertical: 10,
+//     minHeight: 44,
+//     backgroundColor: '#f5f5f5',
+//   },
+//   dropdownButtonText: {
+//     fontSize: 14,
+//     flex: 1,
+//   },
+//   dateInputButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//     borderWidth: 1,
+//     borderRadius: 8,
+//     paddingHorizontal: 12,
+//     paddingVertical: 10,
+//     minHeight: 44,
+//     backgroundColor: '#f5f5f5',
+//   },
+//   dateInputText: {
+//     fontSize: 14,
+//     flex: 1,
+//   },
+//   modalOverlay: {
+//     flex: 1,
+//     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+//     justifyContent: 'flex-end',
+//   },
+//   modalContent: {
+//     borderTopLeftRadius: 16,
+//     borderTopRightRadius: 16,
+//     maxHeight: '80%',
+//     paddingBottom: 20,
+//   },
+//   modalHeader: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     paddingHorizontal: 16,
+//     paddingVertical: 16,
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#e0e0e0',
+//   },
+//   modalTitle: {
+//     fontSize: 18,
+//     fontWeight: '600',
+//   },
+//   classListItem: {
+//     paddingHorizontal: 16,
+//     paddingVertical: 12,
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#f0f0f0',
+//   },
+//   classListItemText: {
+//     fontSize: 14,
+//   },
+//   classListItemTextSelected: {
+//     color: '#fff',
+//     fontWeight: '600',
+//   },
+// });
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingBottom: 20,
   },
+
   typeSelector: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 10,
-    paddingVertical: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
     gap: 8,
   },
+
   typeButton: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ccc',
-    gap: 4,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#fff',
   },
+
   typeButtonActive: {
-    borderWidth: 0,
+    elevation: 4,
   },
+
   typeButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
   },
+
   typeButtonTextActive: {
     color: '#fff',
   },
+
   formContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingBottom: 30,
   },
+
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
     marginTop: 10,
   },
+
   sectionSubtitle: {
     fontSize: 14,
     fontWeight: '600',
-    marginTop: 15,
+    marginTop: 18,
     marginBottom: 10,
     opacity: 0.7,
   },
+
   fieldContainer: {
-    marginBottom: 15,
+    marginBottom: 14,
   },
+
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     marginBottom: 6,
   },
+
   input: {
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 14,
-    minHeight: 44,
+    minHeight: 46,
   },
+
   loadingContainer: {
-    height: 44,
+    height: 46,
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   errorText: {
-    color: '#ff6b6b',
+    color: '#EF4444',
     fontSize: 12,
     marginTop: 4,
   },
+
   submitButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 20,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 24,
     gap: 8,
   },
+
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
+
   resetButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 10,
-    borderWidth: 2,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 12,
+    borderWidth: 1.5,
     gap: 8,
   },
+
   resetButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
+
   dropdownButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 44,
-    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 46,
   },
+
   dropdownButtonText: {
     fontSize: 14,
     flex: 1,
   },
+
   dateInputButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 44,
-    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 46,
   },
+
   dateInputText: {
     fontSize: 14,
     flex: 1,
   },
+
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
+
   modalContent: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: '80%',
     paddingBottom: 20,
   },
+
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#E5E7EB',
   },
+
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
   },
+
   classListItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F1F5F9',
   },
+
   classListItemText: {
     fontSize: 14,
   },
+
   classListItemTextSelected: {
     color: '#fff',
     fontWeight: '600',

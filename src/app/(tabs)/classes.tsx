@@ -436,97 +436,202 @@ export default function ClassesTab() {
   );
 }
 
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//   },
+//   content: {
+//     padding: 16,
+//     gap: 14,
+//     paddingBottom: 40,
+//   },
+//   centered: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   subtitle: {
+//     marginTop: 6,
+//     opacity: 0.75,
+//     marginBottom: 4,
+//   },
+//   section: {
+//     borderWidth: 1,
+//     borderRadius: 12,
+//     padding: 12,
+//     gap: 8,
+//   },
+//   input: {
+//     borderWidth: 1,
+//     borderColor: '#c9c9c9',
+//     borderRadius: 10,
+//     paddingHorizontal: 12,
+//     paddingVertical: 10,
+//     color: '#111',
+//     backgroundColor: '#fff',
+//     fontSize: 14,
+//   },
+//   actionButton: {
+//     borderRadius: 10,
+//     alignItems: 'center',
+//     paddingVertical: 10,
+//     marginTop: 4,
+//   },
+//   actionText: {
+//     color: '#fff',
+//     fontWeight: '700',
+//   },
+//   label: {
+//     fontSize: 12,
+//     fontWeight: '700',
+//     opacity: 0.8,
+//     marginTop: 6,
+//   },
+//   inputLabel: {
+//     fontSize: 12,
+//     fontWeight: '700',
+//     opacity: 0.8,
+//     marginTop: 4,
+//   },
+//   chipsWrap: {
+//     flexDirection: 'row',
+//     flexWrap: 'wrap',
+//     gap: 8,
+//   },
+//   chip: {
+//     borderWidth: 1,
+//     borderRadius: 999,
+//     paddingHorizontal: 10,
+//     paddingVertical: 6,
+//   },
+//   classListContainer: {
+//     paddingRight: 16,
+//     gap: 10,
+//   },
+//   classCard: {
+//     borderWidth: 1,
+//     borderRadius: 10,
+//     padding: 10,
+//     marginTop: 8,
+//     width: 280,
+//     minWidth: 280,
+//     gap: 4,
+//   },
+//   mutedText: {
+//     fontSize: 12,
+//     opacity: 0.75,
+//   },
+//   errorBox: {
+//     borderRadius: 10,
+//     padding: 10,
+//     backgroundColor: 'rgba(255, 107, 107, 0.12)',
+//   },
+//   errorText: {
+//     color: '#ff6b6b',
+//   },
+// });
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
   content: {
     padding: 16,
-    gap: 14,
-    paddingBottom: 40,
+    gap: 16,
+    paddingBottom: 50,
   },
+
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  subtitle: {
-    marginTop: 6,
-    opacity: 0.75,
-    marginBottom: 4,
-  },
+
   section: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 8,
+    borderRadius: 16,
+    padding: 16,
+    gap: 10,
+    backgroundColor: '#FFFFFF',
+    elevation: 4,
   },
+
   input: {
     borderWidth: 1,
-    borderColor: '#c9c9c9',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#111',
-    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 14,
+    backgroundColor: '#F9FAFB',
   },
+
   actionButton: {
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
-    paddingVertical: 10,
-    marginTop: 4,
+    paddingVertical: 14,
+    marginTop: 8,
   },
+
   actionText: {
     color: '#fff',
     fontWeight: '700',
+    fontSize: 14,
   },
+
   label: {
     fontSize: 12,
     fontWeight: '700',
-    opacity: 0.8,
-    marginTop: 6,
+    marginTop: 8,
   },
+
   inputLabel: {
     fontSize: 12,
     fontWeight: '700',
-    opacity: 0.8,
-    marginTop: 4,
+    marginTop: 6,
   },
+
   chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
+
   chip: {
     borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
+    borderRadius: 20,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
+
   classListContainer: {
     paddingRight: 16,
-    gap: 10,
+    gap: 12,
   },
+
   classCard: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    marginTop: 8,
+    borderRadius: 16,
+    padding: 14,
     width: 280,
     minWidth: 280,
-    gap: 4,
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    elevation: 4,
   },
+
   mutedText: {
     fontSize: 12,
-    opacity: 0.75,
+    opacity: 0.7,
   },
+
   errorBox: {
-    borderRadius: 10,
-    padding: 10,
-    backgroundColor: 'rgba(255, 107, 107, 0.12)',
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: 'rgba(239,68,68,0.1)',
   },
+
   errorText: {
-    color: '#ff6b6b',
+    color: '#EF4444',
+    fontWeight: '500',
   },
 });

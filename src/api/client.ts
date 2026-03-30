@@ -19,7 +19,7 @@ import {
   Timetable,
   User,
 } from '@/src/types';
-import {useAuthStore} from '@/src/store/auth.store';
+// import { useAuthStore } from '@/src/store/auth.store';
 type RefreshResponse = ApiResponse<{ accessToken: string }>;
 
 class ApiService {
@@ -35,8 +35,9 @@ class ApiService {
     });
 
     this.client.interceptors.request.use(async (config) => {
-      const token = useAuthStore.getState().accessToken;
-      // console.log('Attaching token to request:', token);
+      const obj = await AsyncStorage.getItem('school-mis-auth-store');
+      const parsed = obj ? JSON.parse(obj) : null;
+      const token = parsed?.state?.accessToken || (await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN));
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -373,7 +374,12 @@ class ApiService {
     format: 'basic' | 'advanced' | 'styled' | 'cbse',
     studentId: string,
   ): Promise<string> {
-    const token = useAuthStore.getState().accessToken || (await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)) || '';
+
+    // const token = useAuthStore.getState().accessToken || (await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)) || '';
+     const obj = await AsyncStorage.getItem('school-mis-auth-store');
+      const parsed = obj ? JSON.parse(obj) : null;
+      const token = parsed?.state?.accessToken || (await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN));
+     
     const tokenQuery = encodeURIComponent(token);
     if (format === 'advanced') return `${API_BASE_URL}/progress/advanced-report/${studentId}?token=${tokenQuery}`;
     if (format === 'styled') return `${API_BASE_URL}/progress/report-card/${studentId}?token=${tokenQuery}`;

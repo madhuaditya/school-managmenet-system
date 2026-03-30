@@ -154,7 +154,7 @@ export default function AttendanceDetailByMemberScreen() {
     const currentId = normalizeId(currentUserId);
     const targetId = normalizeId(target._id);
 
-    console.log('Authorization check:', role, currentId, targetId, getRoleValue(target.role));
+    // console.log('Authorization check:', role, currentId, targetId, getRoleValue(target.role));
     if (!role || !currentId || !targetId) return false;
     if (role === 'admin') return true;
     if (role === 'student') return targetId === currentId;
@@ -386,184 +386,404 @@ export default function AttendanceDetailByMemberScreen() {
   );
 }
 
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//   },
+//   content: {
+//     padding: 16,
+//     gap: 12,
+//     paddingBottom: 36,
+//   },
+//   centered: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     padding: 20,
+//     gap: 8,
+//   },
+//   deniedTitle: {
+//     marginTop: 8,
+//     fontSize: 18,
+//     fontWeight: '700',
+//   },
+//   deniedText: {
+//     textAlign: 'center',
+//     opacity: 0.75,
+//     lineHeight: 20,
+//   },
+//   memberCard: {
+//     borderWidth: 1,
+//     borderRadius: 14,
+//     padding: 14,
+//   },
+//   memberName: {
+//     marginTop: 4,
+//     fontSize: 18,
+//     fontWeight: '700',
+//   },
+//   memberMeta: {
+//     marginTop: 2,
+//     opacity: 0.75,
+//   },
+//   monthHeader: {
+//     borderWidth: 1,
+//     borderRadius: 14,
+//     paddingVertical: 10,
+//     paddingHorizontal: 8,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//   },
+//   monthNavBtn: {
+//     width: 34,
+//     height: 34,
+//     borderRadius: 17,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     backgroundColor: 'rgba(127,127,127,0.12)',
+//   },
+//   monthTitle: {
+//     fontSize: 16,
+//     fontWeight: '700',
+//   },
+//   chartCard: {
+//     borderWidth: 1,
+//     borderRadius: 14,
+//     padding: 14,
+//     gap: 10,
+//   },
+//   chartRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 8,
+//   },
+//   chartLabelWrap: {
+//     width: 90,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 6,
+//   },
+//   chartDot: {
+//     width: 10,
+//     height: 10,
+//     borderRadius: 5,
+//   },
+//   chartLabel: {
+//     fontSize: 13,
+//   },
+//   chartBarTrack: {
+//     flex: 1,
+//     height: 10,
+//     borderRadius: 999,
+//     backgroundColor: 'rgba(127,127,127,0.2)',
+//     overflow: 'hidden',
+//   },
+//   chartBarFill: {
+//     height: '100%',
+//     borderRadius: 999,
+//   },
+//   chartValue: {
+//     width: 26,
+//     textAlign: 'right',
+//     fontWeight: '700',
+//   },
+//   chartHint: {
+//     opacity: 0.65,
+//     fontSize: 12,
+//   },
+//   calendarCard: {
+//     borderWidth: 1,
+//     borderRadius: 14,
+//     padding: 14,
+//     gap: 10,
+//   },
+//   weekHeaderRow: {
+//     flexDirection: 'row',
+//   },
+//   weekCell: {
+//     width: `${100 / 7}%`,
+//     textAlign: 'center',
+//     fontSize: 12,
+//     opacity: 0.75,
+//     fontWeight: '600',
+//   },
+//   calendarGrid: {
+//     flexDirection: 'row',
+//     flexWrap: 'wrap',
+//   },
+//   dayCell: {
+//     width: `${100 / 7}%`,
+//     padding: 3,
+//   },
+//   dayBox: {
+//     borderWidth: 1,
+//     borderRadius: 10,
+//     minHeight: 54,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     gap: 2,
+//     backgroundColor: 'rgba(127,127,127,0.06)',
+//   },
+//   dayNumber: {
+//     fontWeight: '700',
+//     fontSize: 12,
+//   },
+//   statusDot: {
+//     width: 9,
+//     height: 9,
+//     borderRadius: 5,
+//   },
+//   dayStatusText: {
+//     fontSize: 10,
+//     opacity: 0.8,
+//     fontWeight: '700',
+//   },
+//   legendRow: {
+//     flexDirection: 'row',
+//     flexWrap: 'wrap',
+//     gap: 10,
+//     marginTop: 4,
+//   },
+//   legendItem: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 6,
+//   },
+//   legendDot: {
+//     width: 10,
+//     height: 10,
+//     borderRadius: 5,
+//   },
+//   legendText: {
+//     fontSize: 12,
+//   },
+//   summaryCard: {
+//     borderWidth: 1,
+//     borderRadius: 14,
+//     padding: 14,
+//     gap: 4,
+//   },
+//   summaryText: {
+//     fontSize: 13,
+//     opacity: 0.9,
+//   },
+// });
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
   content: {
     padding: 16,
-    gap: 12,
-    paddingBottom: 36,
+    gap: 16,
+    paddingBottom: 50,
   },
+
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    gap: 8,
+    gap: 10,
   },
+
   deniedTitle: {
-    marginTop: 8,
-    fontSize: 18,
+    marginTop: 10,
+    fontSize: 20,
     fontWeight: '700',
   },
+
   deniedText: {
     textAlign: 'center',
     opacity: 0.75,
     lineHeight: 20,
   },
+
+  /* MEMBER CARD */
   memberCard: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 18,
+    padding: 16,
+    elevation: 4,
   },
+
   memberName: {
-    marginTop: 4,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
   },
-  memberMeta: {
-    marginTop: 2,
-    opacity: 0.75,
-  },
+
+  /* MONTH HEADER */
   monthHeader: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    elevation: 3,
   },
+
   monthNavBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(127,127,127,0.12)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
+
   monthTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
   },
+
+  /* CHART */
   chartCard: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
-    gap: 10,
+    borderRadius: 18,
+    padding: 16,
+    gap: 12,
+    elevation: 4,
   },
+
   chartRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
+
   chartLabelWrap: {
-    width: 90,
+    width: 100,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
+
   chartDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
   },
+
   chartLabel: {
     fontSize: 13,
+    fontWeight: '600',
   },
+
   chartBarTrack: {
     flex: 1,
-    height: 10,
+    height: 12,
     borderRadius: 999,
-    backgroundColor: 'rgba(127,127,127,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.08)',
     overflow: 'hidden',
   },
+
   chartBarFill: {
     height: '100%',
     borderRadius: 999,
   },
+
   chartValue: {
-    width: 26,
+    width: 28,
     textAlign: 'right',
     fontWeight: '700',
   },
+
   chartHint: {
-    opacity: 0.65,
     fontSize: 12,
+    opacity: 0.7,
   },
+
+  /* CALENDAR */
   calendarCard: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
-    gap: 10,
+    borderRadius: 18,
+    padding: 16,
+    gap: 12,
+    elevation: 4,
   },
+
   weekHeaderRow: {
     flexDirection: 'row',
+    marginBottom: 6,
   },
+
   weekCell: {
     width: `${100 / 7}%`,
     textAlign: 'center',
     fontSize: 12,
-    opacity: 0.75,
-    fontWeight: '600',
+    fontWeight: '700',
+    opacity: 0.7,
   },
+
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
+
   dayCell: {
     width: `${100 / 7}%`,
-    padding: 3,
+    padding: 4,
   },
+
   dayBox: {
     borderWidth: 1,
-    borderRadius: 10,
-    minHeight: 54,
+    borderRadius: 12,
+    minHeight: 58,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-    backgroundColor: 'rgba(127,127,127,0.06)',
+    gap: 3,
   },
+
   dayNumber: {
+    fontSize: 13,
     fontWeight: '700',
-    fontSize: 12,
   },
+
   statusDot: {
-    width: 9,
-    height: 9,
+    width: 8,
+    height: 8,
     borderRadius: 5,
   },
+
   dayStatusText: {
     fontSize: 10,
-    opacity: 0.8,
     fontWeight: '700',
+    opacity: 0.8,
   },
+
+  /* LEGEND */
   legendRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 4,
+    gap: 12,
+    marginTop: 6,
   },
+
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
+
   legendDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
   },
+
   legendText: {
     fontSize: 12,
+    fontWeight: '500',
   },
+
+  /* SUMMARY */
   summaryCard: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
-    gap: 4,
+    borderRadius: 18,
+    padding: 16,
+    gap: 6,
+    elevation: 4,
   },
+
   summaryText: {
     fontSize: 13,
     opacity: 0.9,

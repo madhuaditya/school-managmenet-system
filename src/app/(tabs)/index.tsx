@@ -2,6 +2,7 @@ import { ComponentProps, useCallback, useEffect, useMemo, useState } from 'react
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
+import { Picker } from '@react-native-picker/picker';
 
 import { apiService } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
@@ -364,66 +365,76 @@ export default function HomeScreen() {
           <ThemedText type="subtitle" style={styles.noticeHeading}>Timetable</ThemedText>
           <ThemedText style={styles.filterHint}>Filter by school/class, day and subject</ThemedText>
 
-          <View style={styles.filterRow}>
-            <Pressable
-              onPress={() => {
-                setViewMode('school');
-                setSelectedClassId(null);
-              }}
-              style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: viewMode === 'school' ? theme.tint : theme.background }]}>
-              <ThemedText style={{ color: viewMode === 'school' ? '#fff' : theme.text, fontWeight: '600' }}>Own School</ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={() => setViewMode('class')}
-              style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: viewMode === 'class' ? theme.tint : theme.background }]}>
-              <ThemedText style={{ color: viewMode === 'class' ? '#fff' : theme.text, fontWeight: '600' }}>School Class</ThemedText>
-            </Pressable>
+          <View style={styles.dropdownGroup}>
+            <ThemedText style={styles.dropdownLabel}>View</ThemedText>
+            <View style={[styles.pickerWrap, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+              <Picker
+                selectedValue={viewMode}
+                onValueChange={(value: 'school' | 'class') => {
+                  setViewMode(value);
+                  if (value === 'school') {
+                    setSelectedClassId(null);
+                  }
+                }}
+                style={[styles.picker, { color: theme.text }]}
+                dropdownIconColor={theme.text}>
+                <Picker.Item label="School" value="school" />
+                <Picker.Item label="School Class" value="class" />
+              </Picker>
+            </View>
           </View>
 
           {viewMode === 'class' ? (
-            <View style={styles.filterRow}>
-              {classes.length === 0 ? (
-                <ThemedText style={styles.emptyNoticeText}>No classes found</ThemedText>
-              ) : (
-                classes.map((cls) => (
-                  <Pressable
-                    key={cls._id}
-                    onPress={() => setSelectedClassId(cls._id)}
-                    style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedClassId === cls._id ? theme.tint : theme.background }]}>
-                    <ThemedText style={{ color: selectedClassId === cls._id ? '#fff' : theme.text, fontWeight: '600' }}>
-                      {cls.name}{cls.section ? ` (${cls.section})` : ''}
-                    </ThemedText>
-                  </Pressable>
-                ))
-              )}
+            <View style={styles.dropdownGroup}>
+              <ThemedText style={styles.dropdownLabel}>Class</ThemedText>
+              <View style={[styles.pickerWrap, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+                <Picker
+                  selectedValue={selectedClassId ?? ''}
+                  onValueChange={(value: string) => setSelectedClassId(value || null)}
+                  style={[styles.picker, { color: theme.text }]}
+                  dropdownIconColor={theme.text}>
+                  <Picker.Item label={classes.length === 0 ? 'No classes found' : 'Select Class'} value="" />
+                  {classes.map((cls) => (
+                    <Picker.Item
+                      key={cls._id}
+                      label={`${cls.name}${cls.section ? ` (${cls.section})` : ''}`}
+                      value={cls._id}
+                    />
+                  ))}
+                </Picker>
+              </View>
             </View>
           ) : null}
 
-          <View style={styles.filterRow}>
-            {DAYS.map((day) => (
-              <Pressable
-                key={day}
-                onPress={() => setSelectedDay(day)}
-                style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedDay === day ? theme.tint : theme.background }]}>
-                <ThemedText style={{ color: selectedDay === day ? '#fff' : theme.text, fontWeight: '600' }}>{day}</ThemedText>
-              </Pressable>
-            ))}
+          <View style={styles.dropdownGroup}>
+            <ThemedText style={styles.dropdownLabel}>Day</ThemedText>
+            <View style={[styles.pickerWrap, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+              <Picker
+                selectedValue={selectedDay}
+                onValueChange={(value: DayFilter) => setSelectedDay(value)}
+                style={[styles.picker, { color: theme.text }]}
+                dropdownIconColor={theme.text}>
+                {DAYS.map((day) => (
+                  <Picker.Item key={day} label={day} value={day} />
+                ))}
+              </Picker>
+            </View>
           </View>
 
-          <View style={styles.filterRow}>
-            <Pressable
-              onPress={() => setSelectedSubjectId('All')}
-              style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedSubjectId === 'All' ? theme.tint : theme.background }]}>
-              <ThemedText style={{ color: selectedSubjectId === 'All' ? '#fff' : theme.text, fontWeight: '600' }}>All Subjects</ThemedText>
-            </Pressable>
-            {subjectOptions.map((subject) => (
-              <Pressable
-                key={subject.id}
-                onPress={() => setSelectedSubjectId(subject.id)}
-                style={[styles.filterChip, { borderColor: theme.icon, backgroundColor: selectedSubjectId === subject.id ? theme.tint : theme.background }]}>
-                <ThemedText style={{ color: selectedSubjectId === subject.id ? '#fff' : theme.text, fontWeight: '600' }}>{subject.label}</ThemedText>
-              </Pressable>
-            ))}
+          <View style={styles.dropdownGroup}>
+            <ThemedText style={styles.dropdownLabel}>Subject</ThemedText>
+            <View style={[styles.pickerWrap, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+              <Picker
+                selectedValue={selectedSubjectId}
+                onValueChange={(value: 'All' | string) => setSelectedSubjectId(value)}
+                style={[styles.picker, { color: theme.text }]}
+                dropdownIconColor={theme.text}>
+                <Picker.Item label="All Subjects" value="All" />
+                {subjectOptions.map((subject) => (
+                  <Picker.Item key={subject.id} label={subject.label} value={subject.id} />
+                ))}
+              </Picker>
+            </View>
           </View>
 
           {tableLoading ? (
@@ -459,140 +470,321 @@ export default function HomeScreen() {
   );
 }
 
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//   },
+//   content: {
+//     padding: 16,
+//     gap: 12,
+//     paddingBottom: 36,
+//   },
+//   centered: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   subtitle: {
+//     opacity: 0.75,
+//   },
+//   errorText: {
+//     color: '#d93025',
+//     fontSize: 13,
+//     marginTop: 6,
+//   },
+//   statsBox: {
+//     borderWidth: 1,
+//     borderRadius: 12,
+//     padding: 12,
+//     gap: 8,
+//     marginTop: 8,
+//   },
+//   schoolInfoBox: {
+//     borderWidth: 1,
+//     borderRadius: 12,
+//     padding: 12,
+//     gap: 6,
+//     marginTop: 8,
+//   },
+//   schoolInfoText: {
+//     opacity: 0.85,
+//     fontSize: 13,
+//   },
+//   statsRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//     paddingVertical: 6,
+//   },
+//   statsLeft: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 10,
+//   },
+//   iconWrap: {
+//     width: 30,
+//     height: 30,
+//     borderRadius: 999,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//   },
+//   cardLabel: {
+//     opacity: 0.75,
+//     fontSize: 13,
+//   },
+//   quickActionsHeading: {
+//     marginTop: 8,
+//   },
+//   routeCardsContainer: {
+//     paddingRight: 16,
+//     gap: 12,
+//     marginVertical: 8,
+//   },
+//   routeCard: {
+//     width: 120,
+//     minWidth: 120,
+//     borderRadius: 12,
+//     padding: 12,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     gap: 8,
+//   },
+//   routeCardLabel: {
+//     color: '#fff',
+//     fontWeight: '600',
+//     fontSize: 12,
+//     textAlign: 'center',
+//   },
+//   noticeHeading: {
+//     marginTop: 8,
+//   },
+//   noticeListContainer: {
+//     paddingRight: 16,
+//     gap: 12,
+//   },
+//   emptyNoticeText: {
+//     opacity: 0.7,
+//     fontSize: 13,
+//   },
+//   noticeCard: {
+//     borderWidth: 1,
+//     borderRadius: 12,
+//     padding: 12,
+//     gap: 8,
+//     width: 280,
+//     minWidth: 280,
+//   },
+//   noticeMeta: {
+//     opacity: 0.65,
+//     fontSize: 12,
+//   },
+//   timetableListContainer: {
+//     paddingRight: 16,
+//     gap: 12,
+//   },
+//   timetableCard: {
+//     borderWidth: 1,
+//     borderRadius: 12,
+//     padding: 12,
+//     gap: 8,
+//     width: 300,
+//     minWidth: 300,
+//   },
+//   filterHint: {
+//     opacity: 0.75,
+//     fontSize: 12,
+//     marginTop: -2,
+//   },
+//   filterRow: {
+//     flexDirection: 'row',
+//     flexWrap: 'wrap',
+//     gap: 8,
+//   },
+//   filterChip: {
+//     borderWidth: 1,
+//     borderRadius: 999,
+//     paddingHorizontal: 10,
+//     paddingVertical: 6,
+//   },
+// });
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
   content: {
     padding: 16,
-    gap: 12,
-    paddingBottom: 36,
+    gap: 16,
+    paddingBottom: 50,
   },
+
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   subtitle: {
-    opacity: 0.75,
-  },
-  errorText: {
-    color: '#d93025',
-    fontSize: 13,
+    fontSize: 18,
+    fontWeight: '700',
     marginTop: 6,
   },
-  statsBox: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 8,
-    marginTop: 8,
-  },
-  schoolInfoBox: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 6,
-    marginTop: 8,
-  },
-  schoolInfoText: {
-    opacity: 0.85,
+
+  errorText: {
+    color: '#EF4444',
     fontSize: 13,
   },
+
+  /* SCHOOL INFO */
+  schoolInfoBox: {
+    borderRadius: 16,
+    padding: 16,
+    gap: 6,
+    elevation: 4,
+  },
+
+  schoolInfoText: {
+    fontSize: 13,
+    opacity: 0.8,
+  },
+
+  /* STATS */
+  statsBox: {
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+    elevation: 4,
+  },
+
   statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    alignItems: 'center',
   },
+
   statsLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
+
   iconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 999,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   cardLabel: {
-    opacity: 0.75,
     fontSize: 13,
+    opacity: 0.7,
   },
+
+  /* QUICK ACTIONS */
   quickActionsHeading: {
-    marginTop: 8,
+    marginTop: 6,
   },
+
   routeCardsContainer: {
     paddingRight: 16,
-    gap: 12,
-    marginVertical: 8,
+    gap: 14,
   },
+
   routeCard: {
     width: 120,
     minWidth: 120,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
+    elevation: 5,
   },
+
   routeCardLabel: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 12,
     textAlign: 'center',
   },
+
+  /* NOTICES */
   noticeHeading: {
-    marginTop: 8,
+    marginTop: 6,
   },
+
   noticeListContainer: {
     paddingRight: 16,
     gap: 12,
   },
+
+  noticeCard: {
+    borderRadius: 16,
+    padding: 14,
+    gap: 8,
+    width: 280,
+    elevation: 4,
+  },
+
+  noticeMeta: {
+    fontSize: 11,
+    opacity: 0.6,
+  },
+
   emptyNoticeText: {
     opacity: 0.7,
     fontSize: 13,
   },
-  noticeCard: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 8,
-    width: 280,
-    minWidth: 280,
-  },
-  noticeMeta: {
-    opacity: 0.65,
-    fontSize: 12,
-  },
-  timetableListContainer: {
-    paddingRight: 16,
-    gap: 12,
-  },
-  timetableCard: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 8,
-    width: 300,
-    minWidth: 300,
-  },
+
+  /* FILTERS */
   filterHint: {
-    opacity: 0.75,
     fontSize: 12,
-    marginTop: -2,
+    opacity: 0.7,
   },
+  dropdownGroup: {
+    gap: 6,
+  },
+  dropdownLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    opacity: 0.8,
+  },
+  pickerWrap: {
+    borderWidth: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  picker: {
+    height: 48,
+  },
+
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
+
   filterChip: {
     borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
+    borderRadius: 20,
+    paddingHorizontal: 12,
     paddingVertical: 6,
+  },
+
+  /* TIMETABLE */
+  timetableListContainer: {
+    paddingRight: 16,
+    gap: 12,
+  },
+
+  timetableCard: {
+    borderRadius: 16,
+    padding: 14,
+    gap: 8,
+    width: 300,
+    elevation: 4,
   },
 });

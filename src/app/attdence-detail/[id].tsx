@@ -153,7 +153,7 @@ export default function AttendanceDetailByMemberScreen() {
     const currentId = normalizeId(currentUserId);
     const targetId = normalizeId(target._id);
 
-    console.log('Authorization check:', role, currentId, targetId, getRoleValue(target.role));
+    // console.log('Authorization check:', role, currentId, targetId, getRoleValue(target.role));
     if (!role || !currentId || !targetId) return false;
     if (role === 'admin') return true;
     if (role === 'student') return targetId === currentId;

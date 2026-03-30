@@ -319,211 +319,454 @@ export default function DoubtsTab() {
   );
 }
 
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     padding: 12,
+//   },
+//   loaderScreen: {
+//     flex: 1,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//   },
+//   composerCard: {
+//     borderWidth: 1,
+//     borderRadius: 14,
+//     padding: 12,
+//     gap: 10,
+//     marginBottom: 10,
+//   },
+//   composerHeaderRow: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//   },
+//   composerToggleBtn: {
+//     width: 34,
+//     height: 34,
+//     borderRadius: 10,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     backgroundColor: '#2563eb',
+//   },
+//   composerHint: {
+//     opacity: 0.7,
+//     fontSize: 12,
+//   },
+//   composerRow: {
+//     flexDirection: 'row',
+//     alignItems: 'flex-end',
+//     gap: 10,
+//   },
+//   chatInput: {
+//     flex: 1,
+//     minHeight: 44,
+//     maxHeight: 120,
+//     borderWidth: 1,
+//     borderRadius: 10,
+//     paddingHorizontal: 12,
+//     paddingVertical: 10,
+//     textAlignVertical: 'top',
+//     fontSize: 14,
+//   },
+//   sendChatButton: {
+//     width: 44,
+//     height: 44,
+//     borderRadius: 12,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     backgroundColor: '#2563eb',
+//   },
+//   chatListContainer: {
+//     gap: 10,
+//     paddingBottom: 36,
+//   },
+//   chatCard: {
+//     borderWidth: 1,
+//     borderRadius: 14,
+//     padding: 12,
+//     gap: 10,
+//   },
+//   rowBetween: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     gap: 8,
+//   },
+//   authorRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 8,
+//     flex: 1,
+//   },
+//   avatarCircle: {
+//     width: 34,
+//     height: 34,
+//     borderRadius: 999,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//   },
+//   avatarText: {
+//     color: '#fff',
+//     fontWeight: '700',
+//   },
+//   metaText: {
+//     opacity: 0.65,
+//     fontSize: 12,
+//   },
+//   countBadge: {
+//     minWidth: 44,
+//     height: 26,
+//     borderRadius: 999,
+//     paddingHorizontal: 8,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     gap: 4,
+//     backgroundColor: '#0f766e',
+//   },
+//   countBadgeText: {
+//     color: '#fff',
+//     fontSize: 12,
+//     fontWeight: '700',
+//   },
+//   chatText: {
+//     fontSize: 14,
+//     lineHeight: 20,
+//   },
+//   chatActionsRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//     gap: 8,
+//   },
+//   iconActionBtn: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 6,
+//     borderRadius: 999,
+//     paddingHorizontal: 10,
+//     paddingVertical: 6,
+//     backgroundColor: '#0ea5e9',
+//   },
+//   iconActionText: {
+//     color: '#fff',
+//     fontSize: 12,
+//     fontWeight: '700',
+//   },
+//   replyComposerRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 8,
+//   },
+//   replyInput: {
+//     flex: 1,
+//     minHeight: 40,
+//     borderWidth: 1,
+//     borderRadius: 10,
+//     paddingHorizontal: 10,
+//     paddingVertical: 8,
+//     fontSize: 13,
+//   },
+//   sendReplyButton: {
+//     width: 40,
+//     height: 40,
+//     borderRadius: 10,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     backgroundColor: '#059669',
+//   },
+//   replyToggleBtn: {
+//     alignSelf: 'flex-start',
+//     paddingHorizontal: 10,
+//     paddingVertical: 6,
+//     borderRadius: 999,
+//     backgroundColor: '#e2e8f0',
+//   },
+//   replyToggleText: {
+//     fontSize: 12,
+//     fontWeight: '700',
+//     color: '#0f172a',
+//   },
+//   replyLoaderWrap: {
+//     paddingVertical: 8,
+//   },
+//   emptyRepliesText: {
+//     opacity: 0.7,
+//     fontSize: 12,
+//   },
+//   replyListContainer: {
+//     gap: 8,
+//     marginTop: 2,
+//   },
+//   replyItem: {
+//     borderWidth: 1,
+//     borderRadius: 10,
+//     padding: 10,
+//     gap: 6,
+//   },
+//   replyAuthor: {
+//     fontSize: 12,
+//     fontWeight: '700',
+//   },
+//   replyMeta: {
+//     opacity: 0.6,
+//     fontSize: 11,
+//   },
+//   replyText: {
+//     fontSize: 13,
+//     lineHeight: 18,
+//   },
+//   disabledButton: {
+//     opacity: 0.6,
+//   },
+//   emptyState: {
+//     opacity: 0.75,
+//     textAlign: 'center',
+//     marginTop: 28,
+//     fontSize: 13,
+//   },
+// });
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 12,
   },
+
   loaderScreen: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   composerCard: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 16,
+    padding: 14,
     gap: 10,
-    marginBottom: 10,
+    marginBottom: 12,
+    elevation: 4,
   },
+
   composerHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+
   composerToggleBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#2563EB',
   },
+
   composerHint: {
     opacity: 0.7,
     fontSize: 12,
   },
+
   composerRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 10,
   },
+
   chatInput: {
     flex: 1,
     minHeight: 44,
     maxHeight: 120,
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    textAlignVertical: 'top',
     fontSize: 14,
+    backgroundColor: '#F9FAFB',
   },
+
   sendChatButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#2563EB',
   },
+
   chatListContainer: {
-    gap: 10,
-    paddingBottom: 36,
+    gap: 12,
+    paddingBottom: 40,
   },
+
   chatCard: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 16,
+    padding: 14,
     gap: 10,
+    elevation: 3,
   },
+
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
   },
+
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     flex: 1,
   },
+
   avatarCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 999,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   avatarText: {
     color: '#fff',
     fontWeight: '700',
   },
+
   metaText: {
-    opacity: 0.65,
-    fontSize: 12,
+    opacity: 0.6,
+    fontSize: 11,
   },
+
   countBadge: {
-    minWidth: 44,
-    height: 26,
+    minWidth: 40,
+    height: 24,
     borderRadius: 999,
     paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    backgroundColor: '#0f766e',
+    backgroundColor: '#2563EB',
   },
+
   countBadgeText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
+
   chatText: {
     fontSize: 14,
     lineHeight: 20,
   },
+
   chatActionsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    alignItems: 'center',
   },
+
   iconActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     borderRadius: 999,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#0ea5e9',
+    backgroundColor: '#2563EB',
   },
+
   iconActionText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',
   },
+
   replyComposerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
+
   replyInput: {
     flex: 1,
     minHeight: 40,
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
+    borderRadius: 12,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 13,
+    backgroundColor: '#F9FAFB',
   },
+
   sendReplyButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#059669',
   },
+
   replyToggleBtn: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#E5E7EB',
   },
+
   replyToggleText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0f172a',
+    color: '#111827',
   },
+
   replyLoaderWrap: {
     paddingVertical: 8,
   },
+
   emptyRepliesText: {
     opacity: 0.7,
     fontSize: 12,
   },
+
   replyListContainer: {
     gap: 8,
-    marginTop: 2,
+    marginTop: 4,
   },
+
   replyItem: {
-    borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 10,
     gap: 6,
+    backgroundColor: '#F9FAFB',
   },
+
   replyAuthor: {
     fontSize: 12,
     fontWeight: '700',
   },
+
   replyMeta: {
     opacity: 0.6,
     fontSize: 11,
   },
+
   replyText: {
     fontSize: 13,
     lineHeight: 18,
   },
+
   disabledButton: {
     opacity: 0.6,
   },
+
   emptyState: {
     opacity: 0.75,
     textAlign: 'center',
-    marginTop: 28,
+    marginTop: 30,
     fontSize: 13,
   },
 });
+

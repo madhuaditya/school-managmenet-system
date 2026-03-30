@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.107:5000/api';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://school-project-backend-lwzb.onrender.com/api' || 'http://192.168.0.107:5000/api';
 export const API_TIMEOUT = 30000;
 
 // Role-based Navigation
