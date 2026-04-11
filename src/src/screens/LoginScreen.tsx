@@ -40,6 +40,7 @@ const LoginScreen: React.FC = () => {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const [forgotUsername, setForgotUsername] = React.useState('');
   const [forgotEmail, setForgotEmail] = React.useState('');
   const [sendingForgot, setSendingForgot] = React.useState(false);
 
@@ -52,7 +53,7 @@ const LoginScreen: React.FC = () => {
     formState: { errors },
   } = useForm<LoginCredentials>({
     defaultValues: {
-      email: '',
+      username: '',
       password: '',
     },
     mode: 'onTouched',
@@ -69,18 +70,22 @@ const LoginScreen: React.FC = () => {
   };
 
   const onForgotPassword = async () => {
-    if (!isValidEmail(forgotEmail)) {
-      Alert.alert('Validation', 'Please enter a valid email');
+    if (!forgotUsername.trim() || !isValidEmail(forgotEmail)) {
+      Alert.alert('Validation', 'Please enter a valid username and email');
       return;
     }
 
     try {
       setSendingForgot(true);
-      const response = await apiService.forgotPassword(forgotEmail.trim());
+      const response = await apiService.forgotPassword({
+        username: forgotUsername.trim(),
+        email: forgotEmail.trim(),
+      });
       if (!response.success) {
         throw new Error(response.msg || 'Failed to send reset email');
       }
       Alert.alert('Success', 'Password reset link sent to your email');
+      setForgotUsername('');
       setForgotEmail('');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to send reset email';
@@ -111,33 +116,32 @@ const LoginScreen: React.FC = () => {
         <View style={styles.form}>
           <Controller
             control={control}
-            name="email"
+            name="username"
             rules={{
-              required: 'Email is required',
-              validate: (value) => isValidEmail(value) || 'Please enter a valid email address',
+              required: 'Username is required',
+              validate: (value) => value.trim().length >= 5 || 'Username must be at least 5 characters',
             }}
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
                 style={[
                   styles.input,
                   {
-                    borderColor: errors.email ? colors.error : colors.border,
+                    borderColor: errors.username ? colors.error : colors.border,
                     color: colors.text,
                     backgroundColor: scheme === 'dark' ? '#020617' : '#fff',
                   },
                 ]}
-                placeholder="Email Address"
+                placeholder="Username"
                 placeholderTextColor={colors.subText}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
-                keyboardType="email-address"
                 editable={!isLoading}
                 autoCapitalize="none"
               />
             )}
           />
-          {errors.email && <Text style={[styles.errorText, { color: colors.error }]}>{errors.email.message}</Text>}
+          {errors.username && <Text style={[styles.errorText, { color: colors.error }]}>{errors.username.message}</Text>}
 
           <Controller
             control={control}
@@ -190,7 +194,23 @@ const LoginScreen: React.FC = () => {
                   backgroundColor: scheme === 'dark' ? '#020617' : '#fff',
                 },
               ]}
-              placeholder="Forgot password? Enter your email"
+              placeholder="Forgot password? Enter your username"
+              placeholderTextColor={colors.subText}
+              value={forgotUsername}
+              onChangeText={setForgotUsername}
+              autoCapitalize="none"
+              editable={!sendingForgot && !isLoading}
+            />
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  borderColor: colors.border,
+                  color: colors.text,
+                  backgroundColor: scheme === 'dark' ? '#020617' : '#fff',
+                },
+              ]}
+              placeholder="Enter your email"
               placeholderTextColor={colors.subText}
               value={forgotEmail}
               onChangeText={setForgotEmail}

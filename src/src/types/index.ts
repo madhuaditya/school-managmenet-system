@@ -133,6 +133,104 @@ export interface Fee {
   paidDate?: string;
 }
 
+export interface SalaryStructure {
+  _id: string;
+  role: 'TEACHER' | 'ACCOUNTANT' | 'DRIVER' | 'ADMIN' | 'OTHER';
+  components: {
+    basic: number;
+    hra: number;
+    da: number;
+    bonus: number;
+  };
+  deductions: {
+    pf: number;
+    tax: number;
+    other: number;
+  };
+}
+
+export interface SalaryRecord {
+  _id: string;
+  month: number;
+  year: number;
+  staffId?: string | { _id: string; name?: string; email?: string };
+  user?: { _id: string; name?: string; email?: string };
+  baseSalary: number;
+  earnings: {
+    basic: number;
+    hra: number;
+    da: number;
+    bonus: number;
+  };
+  deductions: {
+    pf: number;
+    tax: number;
+    other: number;
+    leaveDeduction: number;
+  };
+  totalEarnings: number;
+  totalDeductions: number;
+  netSalary: number;
+  paidAmount: number;
+  status: 'UNPAID' | 'PARTIAL' | 'PAID';
+  remarks?: string;
+  paymentDate?: string;
+}
+
+export interface SalaryPayment {
+  _id: string;
+  salaryRecordId: string;
+  staffId?: string | { _id: string; name?: string; email?: string };
+  amount: number;
+  method: 'BANK' | 'UPI' | 'CASH';
+  transactionId?: string;
+  remarks?: string;
+  status?: 'SUCCESS' | 'FAILED' | 'PENDING';
+  paidAt?: string;
+}
+
+export interface FeeStructure {
+  _id: string;
+  class?: { _id: string; name?: string; section?: string } | string;
+  components: {
+    tuition: number;
+    exam: number;
+    transport: number;
+    hostel: number;
+    activity: number;
+    development: number;
+  };
+}
+
+export interface FeeRecord {
+  _id: string;
+  month: number;
+  year: number;
+  user?: string | { _id: string; name?: string; email?: string };
+  class?: string | { _id: string; name?: string; section?: string };
+  totalFee: number;
+  paidAmount: number;
+  dueAmount: number;
+  discount?: number;
+  fine?: number;
+  dueDate?: string;
+  notes?: string;
+  status: 'PENDING' | 'PARTIAL' | 'PAID';
+}
+
+export interface FeePayment {
+  _id: string;
+  feeRecordId: string;
+  user?: string | { _id: string; name?: string; email?: string };
+  amount: number;
+  lateFee?: number;
+  method: 'UPI' | 'CARD' | 'NETBANKING' | 'CASH';
+  transactionId?: string;
+  remarks?: string;
+  status?: 'SUCCESS' | 'FAILED' | 'PENDING';
+  paidAt?: string;
+}
+
 // Timetable Types
 export interface TimeSlot {
   _id?: string;
@@ -201,7 +299,7 @@ export interface PaginatedItems<T> {
 
 // Authentication Types
 export interface LoginCredentials {
-  email: string;
+  username: string;
   password: string;
 }
 

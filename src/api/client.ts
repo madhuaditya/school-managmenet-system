@@ -18,6 +18,12 @@ import {
   Teacher,
   Timetable,
   User,
+  SalaryStructure,
+  SalaryRecord,
+  SalaryPayment,
+  FeeStructure,
+  FeeRecord,
+  FeePayment,
 } from '@/src/types';
 // import { useAuthStore } from '@/src/store/auth.store';
 type RefreshResponse = ApiResponse<{ accessToken: string }>;
@@ -98,8 +104,8 @@ class ApiService {
   }
 
   // Authentication APIs
-  async login(email: string, password: string): Promise<ApiResponse<AuthResponse>> {
-    return this.post('/auth/login', { email, password });
+  async login(username: string, password: string): Promise<ApiResponse<AuthResponse>> {
+    return this.post('/auth/login', { username, password });
   }
 
   async register(userData: Record<string, unknown>): Promise<ApiResponse<{ userId: string }>> {
@@ -173,8 +179,8 @@ class ApiService {
     return this.post('/auth/change-password', { oldPassword, newPassword });
   }
 
-  async forgotPassword(email: string): Promise<ApiResponse<null>> {
-    return this.post('/auth/forgot-password', { email });
+  async forgotPassword(payload: { username: string; email: string }): Promise<ApiResponse<null>> {
+    return this.post('/auth/forgot-password', payload);
   }
 
   async forgotSchoolPassword(email: string): Promise<ApiResponse<null>> {
@@ -208,6 +214,10 @@ class ApiService {
 
   async getAdmins(): Promise<ApiResponse<Array<{ _id: string; user?: User }>>> {
     return this.get('/auth/admin/all');
+  }
+
+  async getStaff(): Promise<ApiResponse<Array<{ _id: string; user?: User }>>> {
+    return this.get('/auth/staff/all');
   }
 
   // Class APIs
@@ -476,6 +486,223 @@ class ApiService {
 
   async getFees(): Promise<ApiResponse<Fee[]>> {
     return this.get('/fee/all');
+  }
+
+  // Salary structure APIs
+  async createSalaryStructure(payload: {
+    role: 'TEACHER' | 'ACCOUNTANT' | 'DRIVER' | 'ADMIN' | 'OTHER';
+    components: { basic: number; hra: number; da: number; bonus: number };
+    deductions: { pf: number; tax: number; other: number };
+  }): Promise<ApiResponse<SalaryStructure>> {
+    return this.post('/salary-structure/create', payload);
+  }
+
+  async getAllSalaryStructures(): Promise<ApiResponse<SalaryStructure[]>> {
+    return this.get('/salary-structure/all');
+  }
+
+  async updateSalaryStructure(id: string, payload: Partial<{
+    role: 'TEACHER' | 'ACCOUNTANT' | 'DRIVER' | 'ADMIN' | 'OTHER';
+    components: { basic: number; hra: number; da: number; bonus: number };
+    deductions: { pf: number; tax: number; other: number };
+  }>): Promise<ApiResponse<SalaryStructure>> {
+    return this.put(`/salary-structure/${id}`, payload);
+  }
+
+  async deleteSalaryStructure(id: string): Promise<ApiResponse<null>> {
+    return this.del(`/salary-structure/${id}`);
+  }
+
+  // Salary record APIs
+  async createSalaryRecord(payload: {
+    staffId: string;
+    month: number;
+    year: number;
+    baseSalary: number;
+    earnings: { basic: number; hra: number; da: number; bonus: number };
+    deductions: { pf: number; tax: number; other: number; leaveDeduction: number };
+    remarks?: string;
+  }): Promise<ApiResponse<SalaryRecord>> {
+    return this.post('/salary-management/record/create', payload);
+  }
+
+  async updateSalaryRecord(id: string, payload: Partial<{
+    baseSalary: number;
+    earnings: { basic: number; hra: number; da: number; bonus: number };
+    deductions: { pf: number; tax: number; other: number; leaveDeduction: number };
+    status: 'UNPAID' | 'PARTIAL' | 'PAID';
+    remarks: string;
+    paymentDate: string | null;
+  }>): Promise<ApiResponse<SalaryRecord>> {
+    return this.put(`/salary-management/record/${id}`, payload);
+  }
+
+  async deleteSalaryRecord(id: string): Promise<ApiResponse<null>> {
+    return this.del(`/salary-management/record/${id}`);
+  }
+
+  async getStaffAllSalaries(params: {
+    staffId: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<{ records: SalaryRecord[]; pagination: Record<string, unknown> }>> {
+    const { staffId, ...rest } = params;
+    return this.get(`/salary-management/record/staff/${staffId}/all`, rest);
+  }
+
+  async getStaffSalaryByMonth(params: {
+    staffId: string;
+    month: number;
+    year: number;
+  }): Promise<ApiResponse<SalaryRecord>> {
+    const { staffId, month, year } = params;
+    return this.get(`/salary-management/record/staff/${staffId}/month/${month}/${year}`);
+  }
+
+  // Salary payment APIs
+  async recordSalaryPayment(payload: {
+    salaryRecordId: string;
+    amount: number;
+    method: 'BANK' | 'UPI' | 'CASH';
+    transactionId?: string;
+    remarks?: string;
+  }): Promise<ApiResponse<SalaryPayment>> {
+    return this.post('/salary-management/payment/create', payload);
+  }
+
+  async getSalaryPaymentsByRecord(params: {
+    salaryRecordId: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<{ records: SalaryPayment[]; pagination: Record<string, unknown> }>> {
+    const { salaryRecordId, ...rest } = params;
+    return this.get(`/salary-management/payment/${salaryRecordId}`, rest);
+  }
+
+  async getStaffSalaryPaymentHistory(params: {
+    staffId: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<{ records: SalaryPayment[]; pagination: Record<string, unknown> }>> {
+    const { staffId, ...rest } = params;
+    return this.get(`/salary-management/payment/staff/${staffId}/history`, rest);
+  }
+
+  // Fee structure APIs
+  async createFeeStructure(payload: {
+    classId: string;
+    components: {
+      tuition: number;
+      exam: number;
+      transport: number;
+      hostel: number;
+      activity: number;
+      development: number;
+    };
+  }): Promise<ApiResponse<FeeStructure>> {
+    return this.post('/fee-structure/create', payload);
+  }
+
+  async getAllFeeStructures(): Promise<ApiResponse<FeeStructure[]>> {
+    return this.get('/fee-structure/all');
+  }
+
+  async updateFeeStructure(id: string, payload: Partial<{
+    classId: string;
+    components: {
+      tuition: number;
+      exam: number;
+      transport: number;
+      hostel: number;
+      activity: number;
+      development: number;
+    };
+  }>): Promise<ApiResponse<FeeStructure>> {
+    return this.put(`/fee-structure/${id}`, payload);
+  }
+
+  async deleteFeeStructure(id: string): Promise<ApiResponse<null>> {
+    return this.del(`/fee-structure/${id}`);
+  }
+
+  // Fee record APIs
+  async createFeeRecord(payload: {
+    userId: string;
+    month: number;
+    year: number;
+    totalFee: number;
+    dueAmount: number;
+    discount?: number;
+    fine?: number;
+    dueDate?: string | null;
+    notes?: string;
+    status?: 'PENDING' | 'PARTIAL' | 'PAID';
+  }): Promise<ApiResponse<FeeRecord>> {
+    return this.post('/fee-management/record/create', payload);
+  }
+
+  async updateFeeRecord(id: string, payload: Partial<{
+    totalFee: number;
+    dueAmount: number;
+    discount: number;
+    fine: number;
+    dueDate: string | null;
+    notes: string;
+    status: 'PENDING' | 'PARTIAL' | 'PAID';
+  }>): Promise<ApiResponse<FeeRecord>> {
+    return this.put(`/fee-management/record/${id}`, payload);
+  }
+
+  async deleteFeeRecord(id: string): Promise<ApiResponse<null>> {
+    return this.del(`/fee-management/record/${id}`);
+  }
+
+  async getStudentAllFeeRecords(params: {
+    studentId: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<{ records: FeeRecord[]; pagination: Record<string, unknown> }>> {
+    const { studentId, ...rest } = params;
+    return this.get(`/fee-management/record/student/${studentId}/all`, rest);
+  }
+
+  async getStudentFeeByMonth(params: {
+    studentId: string;
+    month: number;
+    year: number;
+  }): Promise<ApiResponse<FeeRecord>> {
+    const { studentId, month, year } = params;
+    return this.get(`/fee-management/record/student/${studentId}/month/${month}/${year}`);
+  }
+
+  // Fee payment APIs
+  async createFeePayment(payload: {
+    feeRecordId: string;
+    amount: number;
+    lateFee?: number;
+    method: 'UPI' | 'CARD' | 'NETBANKING' | 'CASH';
+    transactionId?: string;
+    remarks?: string;
+  }): Promise<ApiResponse<FeePayment>> {
+    return this.post('/fee-management/payment/create', payload);
+  }
+
+  async getFeePaymentsByRecord(params: {
+    feeRecordId: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<{ records: FeePayment[]; pagination: Record<string, unknown> }>> {
+    const { feeRecordId, ...rest } = params;
+    return this.get(`/fee-management/payment/${feeRecordId}`, rest);
+  }
+
+  async getStudentFeePaymentHistory(params: {
+    studentId: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<{ records: FeePayment[]; pagination: Record<string, unknown> }>> {
+    const { studentId, ...rest } = params;
+    return this.get(`/fee-management/payment/student/${studentId}/history`, rest);
   }
 
   async getAllTimetables(): Promise<ApiResponse<Timetable[]>> {

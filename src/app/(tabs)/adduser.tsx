@@ -25,6 +25,7 @@ type UserType = 'admin' | 'teacher' | 'student' | 'staff';
 
 interface FormData {
   name: string;
+  username: string;
   email: string;
   phone: string;
   password: string;
@@ -71,6 +72,7 @@ export default function AddUserScreen() {
   const [userType, setUserType] = useState<UserType>('student');
   const [formData, setFormData] = useState<FormData>({
     name: '',
+    username: '',
     email: '',
     phone: '',
     password: '',
@@ -150,6 +152,11 @@ export default function AddUserScreen() {
     const nextErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) nextErrors.name = 'Name is required';
+    if (!formData.username.trim()) {
+      nextErrors.username = 'Username is required';
+    } else if (formData.username.trim().length < 5) {
+      nextErrors.username = 'Username must be at least 5 characters';
+    }
     if (!formData.email.trim()) {
       nextErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -198,6 +205,7 @@ export default function AddUserScreen() {
   const resetForm = () => {
     setFormData({
       name: '',
+      username: '',
       email: '',
       phone: '',
       password: '',
@@ -241,6 +249,7 @@ export default function AddUserScreen() {
 
       const registrationData: Record<string, unknown> = {
         name: formData.name,
+        username: formData.username,
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
@@ -351,6 +360,7 @@ export default function AddUserScreen() {
           <ThemedText style={styles.sectionTitle}>Add New {userType.charAt(0).toUpperCase() + userType.slice(1)}</ThemedText>
 
           {renderFormField('Full Name', 'name', 'Enter full name')}
+          {renderFormField('Username', 'username', 'Enter username')}
           {renderFormField('Email', 'email', 'Enter email address', { keyboardType: 'email-address' })}
           {renderFormField('Phone', 'phone', 'Enter phone number', { keyboardType: 'phone-pad' })}
           {renderFormField('Password', 'password', 'Enter password', { secureTextEntry: true })}

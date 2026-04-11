@@ -67,6 +67,14 @@ export default function RootLayout() {
         <Stack.Screen name="attendance" options={{ title: 'Attendance' }} />
         <Stack.Screen name="staff" options={{ title: 'Staff' }} />
         <Stack.Screen name="profile" options={{ title: 'My Profile' }} />
+        <Stack.Screen name="salary-structure" options={{ title: 'Salary Structure' }} />
+        <Stack.Screen name="salary-records" options={{ title: 'Salary Records' }} />
+        <Stack.Screen name="salary-payments" options={{ title: 'Salary Payments' }} />
+        <Stack.Screen name="my-salary" options={{ title: 'My Salary' }} />
+        <Stack.Screen name="fee-structure" options={{ title: 'Fee Structure' }} />
+        <Stack.Screen name="fee-records" options={{ title: 'Fee Records' }} />
+        <Stack.Screen name="fee-payments" options={{ title: 'Fee Payments' }} />
+        <Stack.Screen name="my-fee" options={{ title: 'My Fee' }} />
 
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
 

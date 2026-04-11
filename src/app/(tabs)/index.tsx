@@ -69,7 +69,24 @@ interface TimetableItem {
   }>;
 }
 
-type AppRoute = '/adduser' | '/notice' | '/classes' | '/timetable' | '/students' | '/teachers' | '/admins' | '/myattendance' | '/doubts';
+type AppRoute =
+  | '/adduser'
+  | '/notice'
+  | '/classes'
+  | '/timetable'
+  | '/students'
+  | '/teachers'
+  | '/admins'
+  | '/myattendance'
+  | '/doubts'
+  | '/salary-structure'
+  | '/salary-records'
+  | '/salary-payments'
+  | '/my-salary'
+  | '/fee-structure'
+  | '/fee-records'
+  | '/fee-payments'
+  | '/my-fee';
 
 interface RouteCard {
   route: AppRoute;
@@ -91,6 +108,14 @@ const ROUTE_CARDS: RouteCard[] = [
   { route: '/teachers', label: 'Teachers', icon: 'groups', roles: ['admin'], color: '#E91E63' },
   { route: '/admins', label: 'Admins', icon: 'admin-panel-settings', roles: ['admin'], color: '#F44336' },
   { route: '/myattendance', label: 'Attendance', icon: 'check-circle', roles: ['student', 'staff'], color: '#673AB7' },
+  { route: '/salary-structure', label: 'Salary Structure', icon: 'account-tree', roles: ['admin'], color: '#1D4ED8' },
+  { route: '/salary-records', label: 'Salary Records', icon: 'assignment', roles: ['admin'], color: '#2563EB' },
+  { route: '/salary-payments', label: 'Salary Payments', icon: 'payments', roles: ['admin'], color: '#0F766E' },
+  { route: '/my-salary', label: 'My Salary', icon: 'account-balance-wallet', roles: ['admin', 'teacher', 'staff'], color: '#065F46' },
+  { route: '/fee-structure', label: 'Fee Structure', icon: 'view-list', roles: ['admin'], color: '#7C3AED' },
+  { route: '/fee-records', label: 'Fee Records', icon: 'receipt-long', roles: ['admin'], color: '#9333EA' },
+  { route: '/fee-payments', label: 'Fee Payments', icon: 'price-check', roles: ['admin'], color: '#B45309' },
+  { route: '/my-fee', label: 'My Fee', icon: 'description', roles: ['student'], color: '#C2410C' },
 ];
 
 
@@ -295,21 +320,31 @@ export default function HomeScreen() {
         </ThemedView>
       ) : (
         <>
-          <ThemedView style={[styles.statsBox, { borderColor: theme.icon, backgroundColor: theme.background }]}>
-            {overviewItems.map((item) => (
-              <View key={item.label} style={styles.statsRow}>
-                <View style={styles.statsLeft}>
+          <FlatList
+            data={overviewItems}
+            keyExtractor={(item) => item.label}
+            horizontal={true}
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            contentContainerStyle={styles.overviewListContainer}
+            renderItem={({ item }) => (
+              <ThemedView
+                style={[
+                  styles.overviewCard,
+                  { borderColor: theme.icon, backgroundColor: theme.background },
+                ]}>
+                <View style={styles.overviewTop}>
                   <View style={[styles.iconWrap, { backgroundColor: `${theme.tint}1f` }]}>
                     <MaterialIcons name={item.icon} size={18} color={theme.tint} />
                   </View>
                   <ThemedText style={styles.cardLabel}>{item.label}</ThemedText>
                 </View>
                 <ThemedText type="title">{item.value}</ThemedText>
-              </View>
-            ))}
-          </ThemedView>
+              </ThemedView>
+            )}
+          />
 
-                    <ThemedText type="subtitle" style={styles.noticeHeading}>Notices</ThemedText>
+          <ThemedText type="subtitle" style={styles.noticeHeading}>Notices</ThemedText>
           {notices.length === 0 ? (
             <ThemedText style={styles.emptyNoticeText}>No notices available</ThemedText>
           ) : (
@@ -650,24 +685,25 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
 
-  /* STATS */
-  statsBox: {
+  /* OVERVIEW */
+  overviewListContainer: {
+    paddingRight: 16,
+    gap: 12,
+  },
+
+  overviewCard: {
+    width: 200,
+    minWidth: 200,
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     gap: 12,
     elevation: 4,
   },
 
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  statsLeft: {
+  overviewTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
 
   iconWrap: {

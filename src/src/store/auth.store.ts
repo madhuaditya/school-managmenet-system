@@ -63,10 +63,10 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      login: async ({ email, password }) => {
+      login: async ({ username, password }) => {
         set({ isLoading: true });
         try {
-          const response = await apiService.login(email, password);
+          const response = await apiService.login(username, password);
           if (!response.success || !response.data) {
             throw new Error(response.msg || 'Login failed');
           }
