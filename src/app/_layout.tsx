@@ -1,8 +1,12 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getAllowedRolesForPath, PUBLIC_PATHS } from '@/src/constants/accessControl';
+import { useAuthStore } from '@/src/store/auth.store';
 
 const lightColors = {
   bg: "#F9FAFB",
@@ -21,6 +25,27 @@ const darkColors = {
 };
 
 export default function RootLayout() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
+
+  const role = typeof user?.role === 'string' ? user.role : user?.role?.role;
+
+  useEffect(() => {
+    const allowedRoles = getAllowedRolesForPath(pathname);
+    if (!allowedRoles) return;
+
+    if (!isAuthenticated && !PUBLIC_PATHS.has(pathname)) {
+      router.replace('/');
+      return;
+    }
+
+    if (!role || !allowedRoles.includes(role)) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, pathname, role, router]);
+
   const colorScheme = useColorScheme();
   const colors = colorScheme === 'dark' ? darkColors : lightColors;
 

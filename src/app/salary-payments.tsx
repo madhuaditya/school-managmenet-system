@@ -20,6 +20,9 @@ const paymentDefault = {
   remarks: '',
 };
 
+const currentMonth = String(new Date().getMonth() + 1);
+const currentYear = String(new Date().getFullYear());
+
 export default function SalaryPaymentsScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -28,14 +31,16 @@ export default function SalaryPaymentsScreen() {
   const [selectedRole, setSelectedRole] = useState<RoleKey>('teacher');
   const [users, setUsers] = useState<UserOption[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
-  const [records, setRecords] = useState<SalaryRecord[]>([]);
-  const [selectedRecordId, setSelectedRecordId] = useState('');
   const [payments, setPayments] = useState<SalaryPayment[]>([]);
+  const [summary, setSummary] = useState<(SalaryRecord & { salaryStructureId?: string }) | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [salaryStructure, setSalaryStructure] = useState<{ _id: string } | null>(null);
   const [form, setForm] = useState(paymentDefault);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const selectedRecord = useMemo(() => records.find((item) => item._id === selectedRecordId) || null, [records, selectedRecordId]);
+  const selectedRecord = useMemo(() => summary, [summary]);
   const pendingAmount = useMemo(() => {
     if (!selectedRecord) return 0;
     return Math.max(toMoney(selectedRecord.netSalary) - toMoney(selectedRecord.paidAmount), 0);
@@ -54,8 +59,8 @@ export default function SalaryPaymentsScreen() {
   }, [selectedUserId]);
 
   useEffect(() => {
-    if (selectedRecordId) void loadPayments(selectedRecordId);
-  }, [selectedRecordId]);
+    if (selectedUserId) void loadRecords(selectedUserId);
+  }, [selectedMonth, selectedYear]);
 
   const loadUsers = async (roleKey: RoleKey) => {
     try {
@@ -83,29 +88,23 @@ export default function SalaryPaymentsScreen() {
   const loadRecords = async (staffId: string) => {
     try {
       setLoading(true);
-      const result = await apiService.getStaffAllSalaries({ staffId, page: 1, limit: 50 });
+      const result = await apiService.getStaffSalaryByMonth({
+        staffId,
+        month: Number(selectedMonth),
+        year: Number(selectedYear),
+      });
       if (!result.success) throw new Error(result.msg || 'Failed to load salary records');
-      const items = Array.isArray(result.data?.records) ? result.data.records : [];
-      setRecords(items);
-      setSelectedRecordId(items[0]?._id || '');
-    } catch (error) {
-      setRecords([]);
-      setSelectedRecordId('');
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to load salary records');
-    } finally {
-      setLoading(false);
-    }
-  };
+      setSummary((result.data as SalaryRecord & { salaryStructureId?: string }) || null);
+      setPayments(Array.isArray((result.data as any)?.payments) ? (result.data as any).payments : []);
 
-  const loadPayments = async (salaryRecordId: string) => {
-    try {
-      setLoading(true);
-      const result = await apiService.getSalaryPaymentsByRecord({ salaryRecordId, page: 1, limit: 50 });
-      if (!result.success) throw new Error(result.msg || 'Failed to load payments');
-      setPayments(Array.isArray(result.data?.records) ? result.data.records : []);
+      const structureId = (result.data as any)?.salaryStructureId;
+      if (structureId) {
+        setSalaryStructure({ _id: structureId });
+      }
     } catch (error) {
+      setSummary(null);
       setPayments([]);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to load payments');
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to load salary records');
     } finally {
       setLoading(false);
     }
@@ -113,7 +112,7 @@ export default function SalaryPaymentsScreen() {
 
   const createPayment = async () => {
     const amount = toMoney(form.amount);
-    if (!selectedRecordId) {
+    if (!selectedUserId || !summary) {
       Alert.alert('Validation', 'Please select a salary record.');
       return;
     }
@@ -126,10 +125,19 @@ export default function SalaryPaymentsScreen() {
       return;
     }
 
+    const salaryStructureId = summary?.salaryStructureId || salaryStructure?._id;
+    if (!salaryStructureId) {
+      Alert.alert('Validation', 'Salary structure could not be resolved for this staff member.');
+      return;
+    }
+
     try {
       setSaving(true);
       const result = await apiService.recordSalaryPayment({
-        salaryRecordId: selectedRecordId,
+        staffId: selectedUserId,
+        salaryStructureId,
+        month: Number(selectedMonth),
+        year: Number(selectedYear),
         amount,
         method: form.method,
         transactionId: form.transactionId.trim() || undefined,
@@ -139,7 +147,7 @@ export default function SalaryPaymentsScreen() {
       if (!result.success) throw new Error(result.msg || 'Failed to record salary payment');
 
       setForm(paymentDefault);
-      await Promise.all([loadRecords(selectedUserId), loadPayments(selectedRecordId)]);
+      await loadRecords(selectedUserId);
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to record salary payment');
     } finally {
@@ -177,16 +185,37 @@ export default function SalaryPaymentsScreen() {
         </View>
 
         <View style={styles.field}>
+          <ThemedText style={styles.label}>Month</ThemedText>
+          <View style={styles.pickerWrap}>
+            <Picker selectedValue={selectedMonth} onValueChange={(v) => setSelectedMonth(String(v))}>
+              {Array.from({ length: 12 }).map((_, idx) => {
+                const value = String(idx + 1);
+                return <Picker.Item key={value} label={value} value={value} />;
+              })}
+            </Picker>
+          </View>
+        </View>
+
+        <View style={styles.field}>
+          <ThemedText style={styles.label}>Year</ThemedText>
+          <View style={styles.pickerWrap}>
+            <Picker selectedValue={selectedYear} onValueChange={(v) => setSelectedYear(String(v))}>
+              {Array.from({ length: 6 }).map((_, idx) => {
+                const value = String(new Date().getFullYear() - idx);
+                return <Picker.Item key={value} label={value} value={value} />;
+              })}
+            </Picker>
+          </View>
+        </View>
+
+        <View style={styles.field}>
           <ThemedText style={styles.label}>Salary Record</ThemedText>
           <View style={styles.pickerWrap}>
-            <Picker selectedValue={selectedRecordId} onValueChange={(v) => setSelectedRecordId(v)}>
-              {records.map((record) => (
-                <Picker.Item
-                  key={record._id}
-                  label={`${record.month}/${record.year} - Net ${formatMoney(record.netSalary)} - Paid ${formatMoney(record.paidAmount)}`}
-                  value={record._id}
-                />
-              ))}
+            <Picker selectedValue={summary?._id || ''} enabled={false} onValueChange={() => undefined}>
+              <Picker.Item
+                label={summary ? `${summary.month}/${summary.year} - Net ${formatMoney(summary.netSalary)} - Paid ${formatMoney(summary.paidAmount)}` : 'No salary summary found'}
+                value={summary?._id || ''}
+              />
             </Picker>
           </View>
         </View>

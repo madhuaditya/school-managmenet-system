@@ -1,7 +1,7 @@
 import { ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { Href, useRouter } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 
 import { apiService } from '@/api/client';
@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getDashboardModulesForRole } from '@/src/constants/dashboardMenu';
 import { useAuthStore } from '@/src/store/auth.store';
 
 interface OverviewStats {
@@ -69,54 +70,14 @@ interface TimetableItem {
   }>;
 }
 
-type AppRoute =
-  | '/adduser'
-  | '/notice'
-  | '/classes'
-  | '/timetable'
-  | '/students'
-  | '/teachers'
-  | '/admins'
-  | '/myattendance'
-  | '/doubts'
-  | '/salary-structure'
-  | '/salary-records'
-  | '/salary-payments'
-  | '/my-salary'
-  | '/fee-structure'
-  | '/fee-records'
-  | '/fee-payments'
-  | '/my-fee';
-
 interface RouteCard {
-  route: AppRoute;
+  route: string;
   label: string;
   icon: ComponentProps<typeof MaterialIcons>['name'];
-  roles: string[];
   color: string;
 }
 
 const DAYS: DayFilter[] = ['All', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-const ROUTE_CARDS: RouteCard[] = [
-  { route: '/doubts', label: 'Doubts', icon: 'forum', roles: ['admin', 'teacher', 'student', 'staff'], color: '#0EA5E9' },
-  { route: '/adduser', label: 'Add User', icon: 'person-add', roles: ['admin'], color: '#4CAF50' },
-  { route: '/notice', label: 'Notices', icon: 'notifications', roles: ['admin'], color: '#FF9800' },
-  { route: '/classes', label: 'Classes', icon: 'menu-book', roles: ['teacher', 'admin'], color: '#2196F3' },
-  { route: '/timetable', label: 'Timetable', icon: 'schedule', roles: ['admin', 'teacher'], color: '#9C27B0' },
-  { route: '/students', label: 'Students', icon: 'school', roles: ['teacher', 'admin'], color: '#00BCD4' },
-  { route: '/teachers', label: 'Teachers', icon: 'groups', roles: ['admin'], color: '#E91E63' },
-  { route: '/admins', label: 'Admins', icon: 'admin-panel-settings', roles: ['admin'], color: '#F44336' },
-  { route: '/myattendance', label: 'Attendance', icon: 'check-circle', roles: ['student', 'staff'], color: '#673AB7' },
-  { route: '/salary-structure', label: 'Salary Structure', icon: 'account-tree', roles: ['admin'], color: '#1D4ED8' },
-  { route: '/salary-records', label: 'Salary Records', icon: 'assignment', roles: ['admin'], color: '#2563EB' },
-  { route: '/salary-payments', label: 'Salary Payments', icon: 'payments', roles: ['admin'], color: '#0F766E' },
-  { route: '/my-salary', label: 'My Salary', icon: 'account-balance-wallet', roles: ['admin', 'teacher', 'staff'], color: '#065F46' },
-  { route: '/fee-structure', label: 'Fee Structure', icon: 'view-list', roles: ['admin'], color: '#7C3AED' },
-  { route: '/fee-records', label: 'Fee Records', icon: 'receipt-long', roles: ['admin'], color: '#9333EA' },
-  { route: '/fee-payments', label: 'Fee Payments', icon: 'price-check', roles: ['admin'], color: '#B45309' },
-  { route: '/my-fee', label: 'My Fee', icon: 'description', roles: ['student'], color: '#C2410C' },
-];
 
 
 export default function HomeScreen() {
@@ -288,11 +249,18 @@ export default function HomeScreen() {
 
   const visibleRoutes = useMemo(() => {
     if (!role) return [];
-    return ROUTE_CARDS.filter((card) => card.roles.includes(role));
-  }, [role]);
+    return getDashboardModulesForRole(role, user?._id).map(
+      (item): RouteCard => ({
+        route: item.route,
+        label: item.label,
+        icon: item.icon as ComponentProps<typeof MaterialIcons>['name'],
+        color: item.color,
+      }),
+    );
+  }, [role, user?._id]);
 
-  const handleNavigate = (route: AppRoute) => {
-    router.push(route);
+  const handleNavigate = (route: string) => {
+    router.push(route as Href);
   };
 
   return (
@@ -692,8 +660,8 @@ const styles = StyleSheet.create({
   },
 
   overviewCard: {
-    width: 200,
-    minWidth: 200,
+    width: 150,
+    minWidth: 150,
     borderRadius: 16,
     padding: 14,
     gap: 12,

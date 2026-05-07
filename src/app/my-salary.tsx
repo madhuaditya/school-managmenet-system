@@ -48,18 +48,7 @@ export default function MySalaryScreen() {
       }
 
       setRecord(salaryResult.data);
-
-      const paymentResult = await apiService.getSalaryPaymentsByRecord({
-        salaryRecordId: salaryResult.data._id,
-        page: 1,
-        limit: 50,
-      });
-
-      if (!paymentResult.success) {
-        setPayments([]);
-      } else {
-        setPayments(Array.isArray(paymentResult.data?.records) ? paymentResult.data.records : []);
-      }
+      setPayments(Array.isArray((salaryResult.data as any)?.payments) ? (salaryResult.data as any).payments : []);
     } catch (error) {
       setRecord(null);
       setPayments([]);

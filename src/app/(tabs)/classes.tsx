@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -78,6 +79,12 @@ export default function ClassesTab() {
 
   const [selectedClassForExistingSubject, setSelectedClassForExistingSubject] = useState<string | null>(null);
   const [selectedExistingSubject, setSelectedExistingSubject] = useState<string | null>(null);
+  const [pickerState, setPickerState] = useState<{
+    title: string;
+    options: IdLabel[];
+    value: string | null;
+    onPick: (id: string) => void;
+  } | null>(null);
 
   useEffect(() => {
     void fetchData();
@@ -283,39 +290,30 @@ export default function ClassesTab() {
     }
   };
 
-  const renderPicker = (
+  const openPicker = (title: string, options: IdLabel[], value: string | null, onPick: (id: string) => void) => {
+    setPickerState({ title, options, value, onPick });
+  };
+
+  const closePicker = () => setPickerState(null);
+
+  const renderDropdown = (
+    title: string,
     options: IdLabel[],
     value: string | null,
-    onPick: (id: string) => void
-  ) => (
-    <View style={styles.chipsWrap}>
-      {options.length === 0 ? (
-        <ThemedText style={styles.mutedText}>No options found</ThemedText>
-      ) : (
-        options.map((option) => (
-          <Pressable
-            key={option._id}
-            onPress={() => onPick(option._id)}
-            style={[
-              styles.chip,
-              {
-                borderColor: theme.icon,
-                backgroundColor: value === option._id ? theme.tint : theme.background,
-              },
-            ]}>
-            <ThemedText
-              style={{
-                color: value === option._id ? '#fff' : theme.text,
-                fontSize: 12,
-                fontWeight: '600',
-              }}>
-              {option.name}
-            </ThemedText>
-          </Pressable>
-        ))
-      )}
-    </View>
-  );
+    onPick: (id: string) => void,
+    placeholder: string,
+  ) => {
+    const selectedLabel = options.find((item) => item._id === value)?.name || placeholder;
+
+    return (
+      <Pressable
+        style={[styles.dropdownButton, { borderColor: theme.icon, backgroundColor: theme.background }]}
+        onPress={() => openPicker(title, options, value, onPick)}>
+        <ThemedText style={styles.dropdownText}>{selectedLabel}</ThemedText>
+        <ThemedText style={styles.dropdownArrow}>⌄</ThemedText>
+      </Pressable>
+    );
+  };
 
   if (loading) {
     return (
@@ -365,9 +363,9 @@ export default function ClassesTab() {
           <ThemedView style={[styles.section, { borderColor: theme.icon }]}> 
             <ThemedText type="subtitle">Assign Teacher to Class</ThemedText>
             <ThemedText style={styles.label}>Select Class</ThemedText>
-            {renderPicker(classOptions, selectedClassForTeacher, setSelectedClassForTeacher)}
+            {renderDropdown('Select Class', classOptions, selectedClassForTeacher, setSelectedClassForTeacher, 'Select class')}
             <ThemedText style={styles.label}>Select Teacher</ThemedText>
-            {renderPicker(teacherOptions, selectedTeacherForClass, setSelectedTeacherForClass)}
+            {renderDropdown('Select Teacher', teacherOptions, selectedTeacherForClass, setSelectedTeacherForClass, 'Select teacher')}
             <Pressable style={[styles.actionButton, { backgroundColor: '#2e7d32' }]} onPress={assignTeacher} disabled={saving}>
               <ThemedText style={styles.actionText}>{saving ? 'Saving...' : 'Assign Teacher'}</ThemedText>
             </Pressable>
@@ -382,9 +380,9 @@ export default function ClassesTab() {
             <ThemedText style={styles.inputLabel}>Maximum Marks</ThemedText>
             <TextInput placeholder="Max Marks" placeholderTextColor="#8c8c8c" style={styles.input} keyboardType="numeric" value={subjectMaxMarks} onChangeText={setSubjectMaxMarks} />
             <ThemedText style={styles.label}>Select Class</ThemedText>
-            {renderPicker(classOptions, selectedClassForSubject, setSelectedClassForSubject)}
+            {renderDropdown('Select Class', classOptions, selectedClassForSubject, setSelectedClassForSubject, 'Select class')}
             <ThemedText style={styles.label}>Select Teacher</ThemedText>
-            {renderPicker(teacherOptions, selectedTeacherForSubject, setSelectedTeacherForSubject)}
+            {renderDropdown('Select Teacher', teacherOptions, selectedTeacherForSubject, setSelectedTeacherForSubject, 'Select teacher')}
             <Pressable style={[styles.actionButton, { backgroundColor: '#1565c0' }]} onPress={addSubjectInClass} disabled={saving}>
               <ThemedText style={styles.actionText}>{saving ? 'Saving...' : 'Add Subject'}</ThemedText>
             </Pressable>
@@ -393,15 +391,47 @@ export default function ClassesTab() {
           <ThemedView style={[styles.section, { borderColor: theme.icon }]}> 
             <ThemedText type="subtitle">Assign Existing Subject to Class</ThemedText>
             <ThemedText style={styles.label}>Select Subject</ThemedText>
-            {renderPicker(subjectOptions, selectedExistingSubject, setSelectedExistingSubject)}
+            {renderDropdown('Select Subject', subjectOptions, selectedExistingSubject, setSelectedExistingSubject, 'Select subject')}
             <ThemedText style={styles.label}>Select Class</ThemedText>
-            {renderPicker(classOptions, selectedClassForExistingSubject, setSelectedClassForExistingSubject)}
+            {renderDropdown('Select Class', classOptions, selectedClassForExistingSubject, setSelectedClassForExistingSubject, 'Select class')}
             <Pressable style={[styles.actionButton, { backgroundColor: '#6a1b9a' }]} onPress={assignExistingSubject} disabled={saving}>
               <ThemedText style={styles.actionText}>{saving ? 'Saving...' : 'Assign Subject'}</ThemedText>
             </Pressable>
           </ThemedView>
         </>
       ) : null}
+
+      <Modal visible={!!pickerState} transparent animationType="fade" onRequestClose={closePicker}>
+        <Pressable style={styles.modalOverlay} onPress={closePicker}>
+          <Pressable style={[styles.modalCard, { backgroundColor: theme.background }]} onPress={() => undefined}>
+            <ThemedText type="subtitle">{pickerState?.title}</ThemedText>
+            {pickerState?.options.length ? (
+              <FlatList
+                data={pickerState.options}
+                keyExtractor={(item) => item._id}
+                renderItem={({ item }) => {
+                  const selected = item._id === pickerState.value;
+                  return (
+                    <Pressable
+                      style={[
+                        styles.modalItem,
+                        selected && { backgroundColor: theme.tint },
+                      ]}
+                      onPress={() => {
+                        pickerState.onPick(item._id);
+                        closePicker();
+                      }}>
+                      <ThemedText style={[styles.modalItemText, selected && styles.modalItemTextSelected]}>{item.name}</ThemedText>
+                    </Pressable>
+                  );
+                }}
+              />
+            ) : (
+              <ThemedText style={styles.mutedText}>No options found</ThemedText>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <ThemedView style={[styles.section, { borderColor: theme.icon }]}> 
         <ThemedText type="subtitle">All Classes</ThemedText>
@@ -596,12 +626,46 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-
-  chip: {
+  dropdownButton: {
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dropdownText: {
+    flex: 1,
+  },
+  dropdownArrow: {
+    fontSize: 18,
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
+    maxHeight: '70%',
+    gap: 10,
+  },
+  modalItem: {
+    borderRadius: 12,
+    paddingVertical: 14,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    marginTop: 8,
+    backgroundColor: '#F9FAFB',
+  },
+  modalItemText: {
+    fontWeight: '600',
+  },
+  modalItemTextSelected: {
+    color: '#fff',
   },
 
   classListContainer: {

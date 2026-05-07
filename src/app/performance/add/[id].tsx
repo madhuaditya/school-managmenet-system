@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -49,11 +50,23 @@ export default function AddPerformanceScreen() {
   const [totalMarks, setTotalMarks] = useState('100');
   const [academicYear, setAcademicYear] = useState(currentAcademicYear());
   const [remarks, setRemarks] = useState('');
+  const [pickerState, setPickerState] = useState<null | {
+    title: string;
+    options: Array<{ value: string; label: string }>;
+    selectedValue: string;
+    onPick: (value: string) => void;
+  }>(null);
 
   const selectedSubject = useMemo(
     () => subjects.find((s) => s._id === subjectId),
     [subjects, subjectId],
   );
+
+  const openPicker = (title: string, options: Array<{ value: string; label: string }>, selectedValue: string, onPick: (value: string) => void) => {
+    setPickerState({ title, options, selectedValue, onPick });
+  };
+
+  const closePicker = () => setPickerState(null);
 
   useEffect(() => {
     navigation.setOptions({ title: 'Add Performance' });
@@ -141,57 +154,53 @@ export default function AddPerformanceScreen() {
         <ThemedText type="subtitle" style={styles.cardTitle}>Valid Subjects</ThemedText>
         <ThemedText style={styles.helperText}>You can add performance only for these class-valid subjects.</ThemedText>
 
-        <View style={styles.subjectWrap}>
-          {subjects.map((subject) => {
-            const selected = subject._id === subjectId;
-            return (
-              <Pressable
-                key={subject._id}
-                onPress={() => {
-                  setSubjectId(subject._id);
-                  if (subject.maxMarks) setTotalMarks(String(subject.maxMarks));
-                }}
-                style={[
-                  styles.subjectChip,
-                  {
-                    borderColor: selected ? theme.tint : theme.icon,
-                    backgroundColor: selected ? `${theme.tint}22` : 'rgba(127,127,127,0.08)',
-                  },
-                ]}>
-                <ThemedText style={[styles.subjectText, { color: selected ? theme.tint : theme.text }]}>
-                  {subject.name}{subject.code ? ` (${subject.code})` : ''}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Pressable
+          onPress={() =>
+            openPicker(
+              'Select Subject',
+              subjects.map((subject) => ({
+                value: subject._id,
+                label: `${subject.name}${subject.code ? ` (${subject.code})` : ''}`,
+              })),
+              subjectId,
+              (value) => {
+                setSubjectId(value);
+                const chosen = subjects.find((subject) => subject._id === value);
+                if (chosen?.maxMarks) setTotalMarks(String(chosen.maxMarks));
+              },
+            )
+          }
+          style={[styles.dropdownButton, { borderColor: theme.icon, backgroundColor: theme.background }]}
+        >
+          <ThemedText style={styles.dropdownText}>
+            {selectedSubject ? `${selectedSubject.name}${selectedSubject.code ? ` (${selectedSubject.code})` : ''}` : 'Select subject'}
+          </ThemedText>
+          <ThemedText style={styles.dropdownArrow}>⌄</ThemedText>
+        </Pressable>
       </ThemedView>
 
       <ThemedView style={[styles.card, { borderColor: theme.icon }]}> 
         <ThemedText type="subtitle" style={styles.cardTitle}>Create Record</ThemedText>
 
         <ThemedText style={styles.label}>Assessment Type</ThemedText>
-        <View style={styles.inlineButtonsRow}>
-          {(['exam', 'test', 'assignment'] as const).map((itemType) => {
-            const selected = type === itemType;
-            return (
-              <Pressable
-                key={itemType}
-                onPress={() => setType(itemType)}
-                style={[
-                  styles.inlineChip,
-                  {
-                    borderColor: selected ? theme.tint : theme.icon,
-                    backgroundColor: selected ? theme.tint : 'transparent',
-                  },
-                ]}>
-                <ThemedText style={[styles.inlineChipText, { color: selected ? '#fff' : theme.text }]}>
-                  {itemType.toUpperCase()}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Pressable
+          onPress={() =>
+            openPicker(
+              'Select Type',
+              [
+                { value: 'exam', label: 'EXAM' },
+                { value: 'test', label: 'TEST' },
+                { value: 'assignment', label: 'ASSIGNMENT' },
+              ],
+              type,
+              (value) => setType(value as 'exam' | 'test' | 'assignment'),
+            )
+          }
+          style={[styles.dropdownButton, { borderColor: theme.icon, backgroundColor: theme.background }]}
+        >
+          <ThemedText style={styles.dropdownText}>{type.toUpperCase()}</ThemedText>
+          <ThemedText style={styles.dropdownArrow}>⌄</ThemedText>
+        </Pressable>
 
         <ThemedText style={styles.label}>Title</ThemedText>
         <TextInput
@@ -256,6 +265,29 @@ export default function AddPerformanceScreen() {
           </ThemedText>
         )}
       </ThemedView>
+
+      <Modal visible={!!pickerState} transparent animationType="fade" onRequestClose={closePicker}>
+        <Pressable style={styles.modalOverlay} onPress={closePicker}>
+          <Pressable style={[styles.modalCard, { backgroundColor: theme.background }]} onPress={() => undefined}>
+            <ThemedText type="subtitle">{pickerState?.title}</ThemedText>
+            {pickerState?.options.map((option) => {
+              const selected = option.value === pickerState.selectedValue;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => {
+                    pickerState.onPick(option.value);
+                    closePicker();
+                  }}
+                  style={[styles.modalItem, selected && { backgroundColor: theme.tint }]}
+                >
+                  <ThemedText style={[styles.modalItemText, selected && styles.modalItemTextSelected]}>{option.label}</ThemedText>
+                </Pressable>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -291,14 +323,21 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  subjectChip: {
+  dropdownButton: {
     borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    borderRadius: 12,
+    minHeight: 46,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  subjectText: {
-    fontSize: 12,
+  dropdownText: {
+    flex: 1,
+  },
+  dropdownArrow: {
+    fontSize: 18,
     fontWeight: '700',
   },
   label: {
@@ -324,16 +363,30 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 2,
   },
-  inlineChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    minHeight: 34,
-    justifyContent: 'center',
-    paddingHorizontal: 12,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
   },
-  inlineChipText: {
-    fontSize: 12,
-    fontWeight: '800',
+  modalCard: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
+    maxHeight: '70%',
+    gap: 10,
+  },
+  modalItem: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    marginTop: 8,
+    backgroundColor: '#F9FAFB',
+  },
+  modalItemText: {
+    fontWeight: '600',
+  },
+  modalItemTextSelected: {
+    color: '#fff',
   },
   twoColRow: {
     flexDirection: 'row',

@@ -22,6 +22,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/src/store/auth.store';
 
 type UserType = 'admin' | 'teacher' | 'student' | 'staff';
+type Gender = 'Male' | 'Female' | 'Other' | 'Prefer not to say';
 
 interface FormData {
   name: string;
@@ -30,6 +31,7 @@ interface FormData {
   phone: string;
   password: string;
   confirmPassword: string;
+  gender: Gender;
   address: string;
   city: string;
   state: string;
@@ -77,6 +79,7 @@ export default function AddUserScreen() {
     phone: '',
     password: '',
     confirmPassword: '',
+    gender: 'Prefer not to say',
     address: '',
     city: '',
     state: '',
@@ -101,8 +104,20 @@ export default function AddUserScreen() {
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [showDobPicker, setShowDobPicker] = useState(false);
   const [showAdmissionPicker, setShowAdmissionPicker] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [registeredUserSummary, setRegisteredUserSummary] = useState<{ name: string; username: string; password: string } | null>(null);
 
   const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+  const buildPassword = (name: string, type: UserType) => {
+    const prefix = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '')
+      .slice(0, 4) || 'user';
+    const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `${prefix}${type.slice(0, 2)}@${suffix}`;
+  };
 
   const parseDate = (value: string) => {
     const parsed = value ? new Date(value) : new Date();
@@ -114,6 +129,62 @@ export default function AddUserScreen() {
       fetchClasses();
     }
   }, [userType]);
+
+  useEffect(() => {
+    const fillGeneratedFields = async () => {
+      if (!formData.name.trim()) return;
+
+      try {
+        const [usernameResult, passwordResult, studentIdResult] = await Promise.all([
+          formData.username.trim()
+            ? Promise.resolve(null)
+            : apiService.generateUsername({ name: formData.name.trim(), role: userType }),
+          formData.password.trim()
+            ? Promise.resolve(null)
+            : Promise.resolve({ data: { password: buildPassword(formData.name, userType) } }),
+          userType === 'student' && !formData.studentId.trim()
+            ? apiService.generateStudentId()
+            : Promise.resolve(null),
+        ]);
+
+        if (usernameResult?.success && usernameResult.data?.username) {
+          setFormData((prev) => ({ ...prev, username: usernameResult.data.username }));
+        }
+
+        if (passwordResult?.data?.password) {
+          setFormData((prev) => ({ ...prev, password: passwordResult.data.password, confirmPassword: passwordResult.data.password }));
+        }
+
+        if (studentIdResult?.success && studentIdResult.data?.studentId) {
+          setFormData((prev) => ({ ...prev, studentId: studentIdResult.data.studentId }));
+        }
+      } catch {
+        if (!formData.password.trim()) {
+          const generatedPassword = buildPassword(formData.name, userType);
+          setFormData((prev) => ({ ...prev, password: generatedPassword, confirmPassword: generatedPassword }));
+        }
+      }
+    };
+
+    void fillGeneratedFields();
+  }, [formData.name, formData.username, formData.password, formData.studentId, userType]);
+
+  useEffect(() => {
+    if (userType !== 'student' || !selectedClass) return;
+
+    const fillRollNumber = async () => {
+      try {
+        const response = await apiService.generateRollNumber({ classId: selectedClass._id });
+        if (response.success && response.data?.rollNumber) {
+          setFormData((prev) => ({ ...prev, rollNumber: response.data.rollNumber }));
+        }
+      } catch {
+        // Keep manual value if generator fails.
+      }
+    };
+
+    void fillRollNumber();
+  }, [selectedClass, userType]);
 
   const fetchClasses = async () => {
     try {
@@ -210,6 +281,7 @@ export default function AddUserScreen() {
       phone: '',
       password: '',
       confirmPassword: '',
+      gender: 'Prefer not to say',
       address: '',
       city: '',
       state: '',
@@ -254,6 +326,7 @@ export default function AddUserScreen() {
         phone: formData.phone,
         password: formData.password,
         role: userType,
+        gender: formData.gender,
         city: formData.city,
         state: formData.state,
         address: formData.address,
@@ -277,7 +350,12 @@ export default function AddUserScreen() {
         await apiService.assignStudentToClass(response.data.userId, formData.classId);
       }
 
-      Alert.alert('Success', `${userType.charAt(0).toUpperCase() + userType.slice(1)} added successfully!`);
+      setRegisteredUserSummary({
+        name: formData.name,
+        username: formData.username,
+        password: formData.password,
+      });
+      setSuccessModalVisible(true);
       resetForm();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : `Failed to add ${userType}`;
@@ -365,6 +443,25 @@ export default function AddUserScreen() {
           {renderFormField('Phone', 'phone', 'Enter phone number', { keyboardType: 'phone-pad' })}
           {renderFormField('Password', 'password', 'Enter password', { secureTextEntry: true })}
           {renderFormField('Confirm Password', 'confirmPassword', 'Confirm password', { secureTextEntry: true })}
+
+          <View style={styles.fieldContainer}>
+            <ThemedText style={styles.label}>Gender</ThemedText>
+            <View style={styles.genderRow}>
+              {(['Male', 'Female', 'Other', 'Prefer not to say'] as Gender[]).map((gender) => {
+                const selected = formData.gender === gender;
+                return (
+                  <TouchableOpacity
+                    key={gender}
+                    style={[styles.genderChip, selected && { backgroundColor: theme.tint, borderColor: theme.tint }]}
+                    onPress={() => updateFormField('gender', gender)}
+                    disabled={submitting}
+                  >
+                    <ThemedText style={[styles.genderText, selected && styles.genderTextSelected]}>{gender}</ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
 
           <ThemedText style={styles.sectionSubtitle}>Address Information</ThemedText>
           {renderFormField('Address', 'address', 'Enter address', { multiline: true })}
@@ -540,6 +637,21 @@ export default function AddUserScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <Modal visible={successModalVisible} transparent animationType="fade" onRequestClose={() => setSuccessModalVisible(false)}>
+        <View style={styles.successOverlay}>
+          <View style={[styles.successCard, { backgroundColor: theme.background }]}>
+            <ThemedText type="subtitle">User Created</ThemedText>
+            <ThemedText style={styles.successText}>Name: {registeredUserSummary?.name || 'N/A'}</ThemedText>
+            <ThemedText style={styles.successText}>Username: {registeredUserSummary?.username || 'N/A'}</ThemedText>
+            <ThemedText style={styles.successText}>Password: {registeredUserSummary?.password || 'N/A'}</ThemedText>
+
+            <TouchableOpacity style={[styles.successButton, { backgroundColor: theme.tint }]} onPress={() => setSuccessModalVisible(false)}>
+              <ThemedText style={styles.successButtonText}>Done</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -781,6 +893,26 @@ const styles = StyleSheet.create({
   fieldContainer: {
     marginBottom: 14,
   },
+  genderRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  genderChip: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+  },
+  genderText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  genderTextSelected: {
+    color: '#fff',
+  },
 
   label: {
     fontSize: 13,
@@ -915,5 +1047,29 @@ const styles = StyleSheet.create({
   classListItemTextSelected: {
     color: '#fff',
     fontWeight: '600',
+  },
+  successOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  successCard: {
+    borderRadius: 18,
+    padding: 18,
+    gap: 10,
+  },
+  successText: {
+    fontSize: 14,
+  },
+  successButton: {
+    marginTop: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  successButtonText: {
+    color: '#fff',
+    fontWeight: '700',
   },
 });

@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -38,6 +39,7 @@ interface StudentBasic {
   name?: string;
   studentId?: string;
   rollNumber?: string | number;
+  gender?: string;
 }
 
 const currentAcademicYear = () => {
@@ -76,6 +78,7 @@ export default function StudentPerformanceScreen() {
   const [year, setYear] = useState(currentAcademicYear());
   const [student, setStudent] = useState<StudentBasic | null>(null);
   const [items, setItems] = useState<PerformanceItem[]>([]);
+  const [yearPickerVisible, setYearPickerVisible] = useState(false);
 
   const years = useMemo(() => {
     const now = new Date().getFullYear();
@@ -102,6 +105,7 @@ export default function StudentPerformanceScreen() {
         name: (studentRes.data as unknown as { name?: string }).name,
         studentId: (studentRes.data as unknown as { studentId?: string }).studentId,
         rollNumber: (studentRes.data as unknown as { rollNumber?: string | number }).rollNumber,
+        gender: (studentRes.data as unknown as { gender?: string }).gender,
       });
 
       const perfData = (perfRes.data as unknown as PerformanceItem[]) || [];
@@ -208,6 +212,7 @@ export default function StudentPerformanceScreen() {
         <ThemedText style={styles.heroMeta}>
           Student ID: {student?.studentId || 'N/A'} | Roll: {student?.rollNumber ?? 'N/A'}
         </ThemedText>
+        <ThemedText style={styles.heroMeta}>Gender: {student?.gender || 'N/A'}</ThemedText>
 
         <View style={styles.quickStatsRow}>
           <View style={[styles.statBox, { backgroundColor: 'rgba(22,163,74,0.10)' }]}>
@@ -230,26 +235,39 @@ export default function StudentPerformanceScreen() {
 
       <ThemedView style={[styles.yearCard, { borderColor: theme.icon }]}> 
         <ThemedText type="defaultSemiBold">Academic Year</ThemedText>
-        <View style={styles.chipsRow}>
-          {years.map((y) => {
-            const selected = y === year;
-            return (
-              <Pressable
-                key={y}
-                onPress={() => setYear(y)}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: selected ? theme.tint : 'rgba(127,127,127,0.10)',
-                    borderColor: selected ? theme.tint : theme.icon,
-                  },
-                ]}>
-                <ThemedText style={[styles.chipText, { color: selected ? '#fff' : theme.text }]}>{y}</ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Pressable
+          onPress={() => setYearPickerVisible(true)}
+          style={[styles.dropdownButton, { borderColor: theme.icon, backgroundColor: theme.background }]}
+        >
+          <ThemedText style={styles.dropdownText}>{year}</ThemedText>
+          <ThemedText style={styles.dropdownArrow}>⌄</ThemedText>
+        </Pressable>
       </ThemedView>
+
+      <Modal visible={yearPickerVisible} transparent animationType="fade" onRequestClose={() => setYearPickerVisible(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setYearPickerVisible(false)}>
+          <Pressable style={[styles.modalCard, { backgroundColor: theme.background }]} onPress={() => undefined}>
+            <ThemedText type="subtitle">Select Academic Year</ThemedText>
+            <ScrollView>
+              {years.map((itemYear) => {
+                const selected = itemYear === year;
+                return (
+                  <Pressable
+                    key={itemYear}
+                    onPress={() => {
+                      setYear(itemYear);
+                      setYearPickerVisible(false);
+                    }}
+                    style={[styles.modalItem, selected && { backgroundColor: theme.tint }]}
+                  >
+                    <ThemedText style={[styles.modalItemText, selected && styles.modalItemTextSelected]}>{itemYear}</ThemedText>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <ThemedView style={[styles.reportCard, { borderColor: theme.icon }]}> 
         <ThemedText type="defaultSemiBold">Download PDF (Different Formats)</ThemedText>
@@ -400,14 +418,20 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  chip: {
+  dropdownButton: {
     borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  chipText: {
-    fontSize: 12,
+  dropdownText: {
+    fontWeight: '700',
+  },
+  dropdownArrow: {
+    fontSize: 18,
     fontWeight: '700',
   },
   reportCard: {
@@ -492,5 +516,30 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
+    maxHeight: '60%',
+    gap: 10,
+  },
+  modalItem: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    marginTop: 8,
+    backgroundColor: '#F9FAFB',
+  },
+  modalItemText: {
+    fontWeight: '600',
+  },
+  modalItemTextSelected: {
+    color: '#fff',
   },
 });

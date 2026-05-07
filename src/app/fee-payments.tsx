@@ -15,10 +15,13 @@ type StudentOption = { id: string; label: string };
 const formDefault = {
   amount: '',
   lateFee: '0',
-  method: 'UPI' as 'UPI' | 'CARD' | 'NETBANKING' | 'CASH',
+  method: 'UPI' as 'UPI' | 'CARD' | 'NETBANKING' | 'CASH' | 'BANK',
   transactionId: '',
   remarks: '',
 };
+
+const currentMonth = String(new Date().getMonth() + 1);
+const currentYear = String(new Date().getFullYear());
 
 export default function FeePaymentsScreen() {
   const router = useRouter();
@@ -29,15 +32,16 @@ export default function FeePaymentsScreen() {
   const [selectedClassId, setSelectedClassId] = useState('');
   const [students, setStudents] = useState<StudentOption[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [records, setRecords] = useState<FeeRecord[]>([]);
-  const [selectedRecordId, setSelectedRecordId] = useState('');
   const [payments, setPayments] = useState<FeePayment[]>([]);
+  const [summary, setSummary] = useState<(FeeRecord & { feeStructureId?: string }) | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
 
   const [form, setForm] = useState(formDefault);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const selectedRecord = useMemo(() => records.find((entry) => entry._id === selectedRecordId) || null, [records, selectedRecordId]);
+  const selectedRecord = useMemo(() => summary, [summary]);
 
   useEffect(() => {
     if (role !== 'admin') {
@@ -52,12 +56,8 @@ export default function FeePaymentsScreen() {
   }, [selectedClassId]);
 
   useEffect(() => {
-    if (selectedStudentId) void loadRecords(selectedStudentId);
-  }, [selectedStudentId]);
-
-  useEffect(() => {
-    if (selectedRecordId) void loadPayments(selectedRecordId);
-  }, [selectedRecordId]);
+    if (selectedStudentId) void loadSummary(selectedStudentId);
+  }, [selectedStudentId, selectedMonth, selectedYear]);
 
   const loadClasses = async () => {
     try {
@@ -80,9 +80,11 @@ export default function FeePaymentsScreen() {
       const result = await apiService.getClassById(classId);
       if (!result.success) throw new Error(result.msg || 'Failed to load class students');
 
-      const options = (Array.isArray(result.data?.students) ? result.data.students : [])
+      const options = await Promise.resolve(
+        (Array.isArray(result.data?.students) ? result.data.students : [])
         .map((entry: any) => ({ id: entry?.user?._id || entry?._id, label: entry?.user?.name || entry?.name || 'Unnamed student' }))
-        .filter((entry) => entry.id);
+        .filter((entry) => entry.id),
+      );
 
       setStudents(options);
       setSelectedStudentId(options[0]?.id || '');
@@ -95,39 +97,29 @@ export default function FeePaymentsScreen() {
     }
   };
 
-  const loadRecords = async (studentId: string) => {
+  const loadSummary = async (studentId: string) => {
     try {
       setLoading(true);
-      const result = await apiService.getStudentAllFeeRecords({ studentId, page: 1, limit: 50 });
+      const result = await apiService.getStudentFeeByMonth({
+        studentId,
+        month: Number(selectedMonth),
+        year: Number(selectedYear),
+      });
       if (!result.success) throw new Error(result.msg || 'Failed to load fee records');
-      const list = Array.isArray(result.data?.records) ? result.data.records : [];
-      setRecords(list);
-      setSelectedRecordId(list[0]?._id || '');
+
+      setSummary((result.data as FeeRecord & { feeStructureId?: string }) || null);
+      setPayments(Array.isArray((result.data as any)?.payments) ? (result.data as any).payments : []);
     } catch (error) {
-      setRecords([]);
-      setSelectedRecordId('');
+      setSummary(null);
+      setPayments([]);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to load fee records');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadPayments = async (feeRecordId: string) => {
-    try {
-      setLoading(true);
-      const result = await apiService.getFeePaymentsByRecord({ feeRecordId, page: 1, limit: 50 });
-      if (!result.success) throw new Error(result.msg || 'Failed to load payments');
-      setPayments(Array.isArray(result.data?.records) ? result.data.records : []);
-    } catch (error) {
-      setPayments([]);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to load payments');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const createPayment = async () => {
-    if (!selectedRecordId) {
+    if (!selectedStudentId || !summary) {
       Alert.alert('Validation', 'Please select a fee record.');
       return;
     }
@@ -143,16 +135,25 @@ export default function FeePaymentsScreen() {
       return;
     }
 
-    const maxAllowed = toMoney(selectedRecord?.dueAmount || 0);
+    const maxAllowed = toMoney(summary?.dueAmount || 0);
     if (toMoney(amount + lateFee) > maxAllowed) {
       Alert.alert('Validation', `Amount + late fee cannot exceed due amount (${formatMoney(maxAllowed)}).`);
+      return;
+    }
+
+    const feeStructureId = summary?.feeStructureId;
+    if (!feeStructureId) {
+      Alert.alert('Validation', 'Fee structure could not be resolved for this student.');
       return;
     }
 
     try {
       setSaving(true);
       const result = await apiService.createFeePayment({
-        feeRecordId: selectedRecordId,
+        studentId: selectedStudentId,
+        feeStructureId,
+        month: Number(selectedMonth),
+        year: Number(selectedYear),
         amount,
         lateFee,
         method: form.method,
@@ -163,7 +164,7 @@ export default function FeePaymentsScreen() {
       if (!result.success) throw new Error(result.msg || 'Failed to create fee payment');
 
       setForm(formDefault);
-      await Promise.all([loadPayments(selectedRecordId), loadRecords(selectedStudentId)]);
+      await loadSummary(selectedStudentId);
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create fee payment');
     } finally {
@@ -201,16 +202,37 @@ export default function FeePaymentsScreen() {
         </View>
 
         <View style={styles.field}>
+          <ThemedText style={styles.label}>Month</ThemedText>
+          <View style={styles.pickerWrap}>
+            <Picker selectedValue={selectedMonth} onValueChange={(v) => setSelectedMonth(String(v))}>
+              {Array.from({ length: 12 }).map((_, idx) => {
+                const value = String(idx + 1);
+                return <Picker.Item key={value} label={value} value={value} />;
+              })}
+            </Picker>
+          </View>
+        </View>
+
+        <View style={styles.field}>
+          <ThemedText style={styles.label}>Year</ThemedText>
+          <View style={styles.pickerWrap}>
+            <Picker selectedValue={selectedYear} onValueChange={(v) => setSelectedYear(String(v))}>
+              {Array.from({ length: 6 }).map((_, idx) => {
+                const value = String(new Date().getFullYear() - idx);
+                return <Picker.Item key={value} label={value} value={value} />;
+              })}
+            </Picker>
+          </View>
+        </View>
+
+        <View style={styles.field}>
           <ThemedText style={styles.label}>Fee Record</ThemedText>
           <View style={styles.pickerWrap}>
-            <Picker selectedValue={selectedRecordId} onValueChange={(v) => setSelectedRecordId(v)}>
-              {records.map((record) => (
-                <Picker.Item
-                  key={record._id}
-                  value={record._id}
-                  label={`${record.month}/${record.year} - Due ${formatMoney(record.dueAmount)} (${record.status})`}
-                />
-              ))}
+            <Picker selectedValue={summary?._id || ''} enabled={false} onValueChange={() => undefined}>
+              <Picker.Item
+                value={summary?._id || ''}
+                label={summary ? `${summary.month}/${summary.year} - Due ${formatMoney(summary.dueAmount)} (${summary.status})` : 'No fee summary found'}
+              />
             </Picker>
           </View>
         </View>
@@ -246,6 +268,7 @@ export default function FeePaymentsScreen() {
               <Picker.Item label="CARD" value="CARD" />
               <Picker.Item label="NETBANKING" value="NETBANKING" />
               <Picker.Item label="CASH" value="CASH" />
+              <Picker.Item label="BANK" value="BANK" />
             </Picker>
           </View>
         </View>

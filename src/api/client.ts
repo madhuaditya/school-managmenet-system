@@ -24,6 +24,8 @@ import {
   FeeStructure,
   FeeRecord,
   FeePayment,
+  AppAlert,
+  LeaveRequest,
 } from '@/src/types';
 // import { useAuthStore } from '@/src/store/auth.store';
 type RefreshResponse = ApiResponse<{ accessToken: string }>;
@@ -94,6 +96,12 @@ class ApiService {
   private async put<T>(url: string, data?: unknown): Promise<T> {
     const config = await this.getAuthConfig();
     const response = await this.client.put<T>(url, data, config);
+    return response.data;
+  }
+
+  private async patch<T>(url: string, data?: unknown): Promise<T> {
+    const config = await this.getAuthConfig();
+    const response = await this.client.patch<T>(url, data, config);
     return response.data;
   }
 
@@ -245,6 +253,10 @@ class ApiService {
     return this.get('/class/all');
   }
 
+  async getClassStudents(classId: string): Promise<ApiResponse<Array<Student & { user?: User }>>> {
+    return this.get(`/class/${classId}/students`);
+  }
+
   // Subject APIs
   async createSubject(payload: Record<string, unknown>): Promise<ApiResponse<Subject>> {
     return this.post('/subject/create', payload);
@@ -281,6 +293,18 @@ class ApiService {
 
   async getTeachers(): Promise<ApiResponse<Teacher[]>> {
     return this.get('/teacher/all');
+  }
+
+  async generateUsername(payload: { name: string; role?: 'admin' | 'teacher' | 'student' | 'staff' }): Promise<ApiResponse<{ username: string }>> {
+    return this.post('/auth/generate/username', payload);
+  }
+
+  async generateStudentId(payload?: { year?: number }): Promise<ApiResponse<{ studentId: string }>> {
+    return this.post('/auth/generate/student-id', payload || {});
+  }
+
+  async generateRollNumber(payload: { classId: string }): Promise<ApiResponse<{ rollNumber: string }>> {
+    return this.post('/auth/generate/roll-number', payload);
   }
 
   // Student APIs
@@ -484,6 +508,60 @@ class ApiService {
     return this.get('/notice/valid');
   }
 
+  // Leave APIs
+  async applyLeave(payload: {
+    userId: string;
+    startDate: string;
+    endDate: string;
+    reason: string;
+  }): Promise<ApiResponse<LeaveRequest>> {
+    return this.post('/leave/apply', payload);
+  }
+
+  async getMyLeaves(params?: {
+    month?: number;
+    year?: number;
+    status?: 'pending' | 'approved' | 'declined';
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<{ leaves?: LeaveRequest[]; data?: LeaveRequest[] }>> {
+    return this.get('/leave/my', params);
+  }
+
+  async deleteMyLeave(leaveId: string): Promise<ApiResponse<null>> {
+    return this.del(`/leave/my/${leaveId}`);
+  }
+
+  async getAdminLeaves(params?: {
+    month?: number;
+    year?: number;
+    status?: 'pending' | 'approved' | 'declined';
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<{ leaves?: LeaveRequest[]; data?: LeaveRequest[] }>> {
+    return this.get('/leave/admin', params);
+  }
+
+  async reviewLeave(
+    leaveId: string,
+    payload: { action: 'approve' | 'decline'; reviewRemark?: string },
+  ): Promise<ApiResponse<LeaveRequest>> {
+    return this.patch(`/leave/admin/${leaveId}/review`, payload);
+  }
+
+  // Alert APIs
+  async createAlert(payload: { userId?: string; title?: string; message: string }): Promise<ApiResponse<AppAlert>> {
+    return this.post('/alert/create', payload);
+  }
+
+  async getUnviewedAlerts(): Promise<ApiResponse<AppAlert[]>> {
+    return this.get('/alert/unviewed');
+  }
+
+  async markAlertAsViewed(alertId: string): Promise<ApiResponse<AppAlert>> {
+    return this.put(`/alert/${alertId}/mark-viewed`);
+  }
+
   async getFees(): Promise<ApiResponse<Fee[]>> {
     return this.get('/fee/all');
   }
@@ -499,6 +577,10 @@ class ApiService {
 
   async getAllSalaryStructures(): Promise<ApiResponse<SalaryStructure[]>> {
     return this.get('/salary-structure/all');
+  }
+
+  async getSalaryStructureByRole(role: 'ADMIN' | 'TEACHER' | 'STAFF' | 'ACCOUNTANT' | 'DRIVER' | 'OTHER'): Promise<ApiResponse<SalaryStructure>> {
+    return this.get(`/salary-structure/role/${role}`);
   }
 
   async updateSalaryStructure(id: string, payload: Partial<{
@@ -547,21 +629,24 @@ class ApiService {
     limit?: number;
   }): Promise<ApiResponse<{ records: SalaryRecord[]; pagination: Record<string, unknown> }>> {
     const { staffId, ...rest } = params;
-    return this.get(`/salary-management/record/staff/${staffId}/all`, rest);
+    return this.get(`/salary-management/summary/staff/${staffId}/history`, rest);
   }
 
   async getStaffSalaryByMonth(params: {
     staffId: string;
     month: number;
     year: number;
-  }): Promise<ApiResponse<SalaryRecord>> {
+  }): Promise<ApiResponse<SalaryRecord & { expectedAmount?: number; dueAmount?: number; paymentCount?: number; payments?: SalaryPayment[]; salaryStructureId?: string }>> {
     const { staffId, month, year } = params;
-    return this.get(`/salary-management/record/staff/${staffId}/month/${month}/${year}`);
+    return this.get(`/salary-management/summary/staff/${staffId}/month/${month}/${year}`);
   }
 
   // Salary payment APIs
   async recordSalaryPayment(payload: {
-    salaryRecordId: string;
+    staffId: string;
+    salaryStructureId: string;
+    month: number;
+    year: number;
     amount: number;
     method: 'BANK' | 'UPI' | 'CASH';
     transactionId?: string;
@@ -605,6 +690,10 @@ class ApiService {
 
   async getAllFeeStructures(): Promise<ApiResponse<FeeStructure[]>> {
     return this.get('/fee-structure/all');
+  }
+
+  async getFeeStructureByClass(classId: string): Promise<ApiResponse<FeeStructure>> {
+    return this.get(`/fee-structure/class/${classId}`);
   }
 
   async updateFeeStructure(id: string, payload: Partial<{
@@ -670,17 +759,20 @@ class ApiService {
     studentId: string;
     month: number;
     year: number;
-  }): Promise<ApiResponse<FeeRecord>> {
+  }): Promise<ApiResponse<FeeRecord & { expectedAmount?: number; dueAmount?: number; paymentCount?: number; payments?: FeePayment[]; feeStructureId?: string }>> {
     const { studentId, month, year } = params;
-    return this.get(`/fee-management/record/student/${studentId}/month/${month}/${year}`);
+    return this.get(`/fee-management/summary/student/${studentId}/month/${month}/${year}`);
   }
 
   // Fee payment APIs
   async createFeePayment(payload: {
-    feeRecordId: string;
+    studentId: string;
+    feeStructureId: string;
+    month: number;
+    year: number;
     amount: number;
     lateFee?: number;
-    method: 'UPI' | 'CARD' | 'NETBANKING' | 'CASH';
+    method: 'UPI' | 'CARD' | 'NETBANKING' | 'CASH' | 'BANK';
     transactionId?: string;
     remarks?: string;
   }): Promise<ApiResponse<FeePayment>> {
@@ -692,8 +784,10 @@ class ApiService {
     page?: number;
     limit?: number;
   }): Promise<ApiResponse<{ records: FeePayment[]; pagination: Record<string, unknown> }>> {
-    const { feeRecordId, ...rest } = params;
-    return this.get(`/fee-management/payment/${feeRecordId}`, rest);
+    return this.get(`/fee-management/payment/${params.feeRecordId}`, {
+      page: params.page,
+      limit: params.limit,
+    });
   }
 
   async getStudentFeePaymentHistory(params: {

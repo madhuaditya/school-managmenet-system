@@ -105,6 +105,30 @@ export interface Notice {
   updatedAt?: string;
 }
 
+export interface LeaveRequest {
+  _id: string;
+  userId?: string | { _id: string; name?: string; email?: string; role?: UserRole | { role?: UserRole } };
+  school?: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'declined';
+  reviewRemark?: string;
+  reviewedBy?: string | { _id: string; name?: string };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AppAlert {
+  _id: string;
+  userId?: string | { _id: string; name?: string; role?: UserRole | { role?: UserRole } };
+  message: string;
+  title?: string;
+  viewed?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // Complaint Types
 export interface Complaint {
   _id: string;

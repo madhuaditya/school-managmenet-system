@@ -35,6 +35,7 @@ export default function TabLayout() {
 
   const user = useAuthStore((state) => state.user);
   const role = typeof user?.role === 'string' ? user.role : user?.role?.role;
+  const isAdmin = role === 'admin';
   const isStudent = role === 'student';
   const isStaff = role === 'staff';
 
@@ -189,6 +190,51 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={24} name="checkmark.circle.fill" color={color} />
           ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="leave-apply"
+        options={{
+          href: null,
+          title: 'Apply Leave',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="calendar" color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="my-leaves"
+        options={{
+          href: null,
+          title: 'My Leaves',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="list.bullet" color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="leave-review"
+        options={{
+          href: isAdmin ? undefined : null,
+          title: 'Leave Review',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="checkmark.seal.fill" color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="my-alerts"
+        options={{
+          href: null,
+          title: 'My Alerts',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="bell.fill" color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="create-alert"
+        options={{
+          href: isAdmin ? undefined : null,
+          title: 'Create Alert',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="paperplane.fill" color={color} />,
         }}
       />
     </Tabs>
