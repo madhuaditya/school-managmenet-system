@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  KeyboardEvent,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,11 +19,42 @@ import { apiService } from '@/api/client';
 
 export default function SchoolLoginScreen() {
   const router = useRouter();
+
+  React.useEffect(() => {
+    router.replace('/');
+  }, [router]);
+
+  return null;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [sendingForgot, setSendingForgot] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  const scrollRef = React.useRef<ScrollView>(null);
+  const fieldYRef = React.useRef<Record<string, number>>({});
+
+  React.useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = (event: KeyboardEvent) => {
+      setKeyboardInset(event.endCoordinates?.height || 0);
+    };
+
+    const onHide = () => {
+      setKeyboardInset(0);
+    };
+
+    const showSub = Keyboard.addListener(showEvent, onShow);
+    const hideSub = Keyboard.addListener(hideEvent, onHide);
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const onLogin = async () => {
     if (!email.trim() || !password) {
@@ -69,8 +105,34 @@ export default function SchoolLoginScreen() {
     }
   };
 
+  const trackFieldLayout = (key: string) => (event: any) => {
+    fieldYRef.current[key] = event.nativeEvent.layout.y;
+  };
+
+  const scrollToField = (key: string) => {
+    const y = fieldYRef.current[key];
+    if (typeof y !== 'number') return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 20), animated: true });
+    });
+  };
+
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={0}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[
+          styles.contentWrap,
+          keyboardInset > 0 ? styles.contentWrapWithKeyboard : null,
+          { paddingBottom: keyboardInset + 16 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        scrollIndicatorInsets={{ bottom: keyboardInset }}
+        showsVerticalScrollIndicator={false}>
       <View style={styles.content}>
         <Text style={styles.title}>School MIS</Text>
         <Text style={styles.subtitle}>School Login</Text>
@@ -88,26 +150,32 @@ export default function SchoolLoginScreen() {
         </View>
 
         <View style={styles.form}>
+          <View onLayout={trackFieldLayout('email')}>
           <TextInput
             style={styles.input}
             placeholder="School Email"
             placeholderTextColor="#999"
             value={email}
             onChangeText={setEmail}
+            onFocus={() => scrollToField('email')}
             autoCapitalize="none"
             keyboardType="email-address"
             editable={!loading}
           />
+          </View>
 
+          <View onLayout={trackFieldLayout('password')}>
           <TextInput
             style={styles.input}
             placeholder="Password"
             placeholderTextColor="#999"
             value={password}
             onChangeText={setPassword}
+            onFocus={() => scrollToField('password')}
             secureTextEntry
             editable={!loading}
           />
+          </View>
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -116,13 +184,14 @@ export default function SchoolLoginScreen() {
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>School Login</Text>}
           </TouchableOpacity>
 
-          <View style={styles.forgotWrap}>
+          <View style={styles.forgotWrap} onLayout={trackFieldLayout('forgotEmail')}>
             <TextInput
               style={styles.input}
               placeholder="Forgot password? Enter school email"
               placeholderTextColor="#999"
               value={forgotEmail}
               onChangeText={setForgotEmail}
+              onFocus={() => scrollToField('forgotEmail')}
               autoCapitalize="none"
               keyboardType="email-address"
               editable={!sendingForgot && !loading}
@@ -136,7 +205,8 @@ export default function SchoolLoginScreen() {
           </View>
         </View>
       </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -144,8 +214,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  contentWrap: {
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
+  },
+  contentWrapWithKeyboard: {
+    justifyContent: 'flex-start',
+    paddingTop: 20,
   },
   content: {
     backgroundColor: '#fff',

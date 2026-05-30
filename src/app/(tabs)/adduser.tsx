@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  KeyboardEvent,
   Platform,
   Modal,
   ScrollView,
@@ -20,6 +23,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/src/store/auth.store';
+import AddressLookupField from '@/components/forms/AddressLookupField';
 
 type UserType = 'admin' | 'teacher' | 'student' | 'staff';
 type Gender = 'Male' | 'Female' | 'Other' | 'Prefer not to say';
@@ -106,6 +110,9 @@ export default function AddUserScreen() {
   const [showAdmissionPicker, setShowAdmissionPicker] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [registeredUserSummary, setRegisteredUserSummary] = useState<{ name: string; username: string; password: string } | null>(null);
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const fieldYRef = useRef<Record<string, number>>({});
 
   const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
@@ -131,6 +138,27 @@ export default function AddUserScreen() {
   }, [userType]);
 
   useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = (event: KeyboardEvent) => {
+      setKeyboardInset(event.endCoordinates?.height || 0);
+    };
+
+    const onHide = () => {
+      setKeyboardInset(0);
+    };
+
+    const showSub = Keyboard.addListener(showEvent, onShow);
+    const hideSub = Keyboard.addListener(hideEvent, onHide);
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     const fillGeneratedFields = async () => {
       if (!formData.name.trim()) return;
 
@@ -147,16 +175,18 @@ export default function AddUserScreen() {
             : Promise.resolve(null),
         ]);
 
-        if (usernameResult?.success && usernameResult.data?.username) {
-          setFormData((prev) => ({ ...prev, username: usernameResult.data.username }));
+        const generatedUsername = usernameResult?.data?.username;
+        if (usernameResult?.success && generatedUsername) {
+          setFormData((prev) => ({ ...prev, username: generatedUsername }));
         }
 
         if (passwordResult?.data?.password) {
           setFormData((prev) => ({ ...prev, password: passwordResult.data.password, confirmPassword: passwordResult.data.password }));
         }
 
-        if (studentIdResult?.success && studentIdResult.data?.studentId) {
-          setFormData((prev) => ({ ...prev, studentId: studentIdResult.data.studentId }));
+        const generatedStudentId = studentIdResult?.data?.studentId;
+        if (studentIdResult?.success && generatedStudentId) {
+          setFormData((prev) => ({ ...prev, studentId: generatedStudentId }));
         }
       } catch {
         if (!formData.password.trim()) {
@@ -175,8 +205,9 @@ export default function AddUserScreen() {
     const fillRollNumber = async () => {
       try {
         const response = await apiService.generateRollNumber({ classId: selectedClass._id });
-        if (response.success && response.data?.rollNumber) {
-          setFormData((prev) => ({ ...prev, rollNumber: response.data.rollNumber }));
+        const generatedRollNumber = response.data?.rollNumber;
+        if (response.success && generatedRollNumber) {
+          setFormData((prev) => ({ ...prev, rollNumber: generatedRollNumber }));
         }
       } catch {
         // Keep manual value if generator fails.
@@ -203,6 +234,18 @@ export default function AddUserScreen() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const trackFieldLayout = (key: string) => (event: any) => {
+    fieldYRef.current[key] = event.nativeEvent.layout.y;
+  };
+
+  const scrollToField = (key: string) => {
+    const y = fieldYRef.current[key];
+    if (typeof y !== 'number') return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 20), animated: true });
+    });
   };
 
   const handleClassSelection = (item: ClassItem) => {
@@ -376,7 +419,7 @@ export default function AddUserScreen() {
       editable?: boolean;
     }
   ) => (
-    <View style={styles.fieldContainer}>
+    <View style={styles.fieldContainer} onLayout={trackFieldLayout(String(field))}>
       <ThemedText style={styles.label}>{label}</ThemedText>
       <TextInput
         style={[
@@ -391,6 +434,7 @@ export default function AddUserScreen() {
         placeholderTextColor={theme.tabIconDefault}
         value={formData[field]}
         onChangeText={(value) => updateFormField(field, value)}
+        onFocus={() => scrollToField(String(field))}
         secureTextEntry={options?.secureTextEntry}
         keyboardType={options?.keyboardType}
         multiline={options?.multiline}
@@ -401,8 +445,18 @@ export default function AddUserScreen() {
   );
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView
+      style={styles.keyboardContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={0}>
+      <ThemedView style={styles.container}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: keyboardInset + 24 }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        scrollIndicatorInsets={{ bottom: keyboardInset }}>
         <View style={styles.typeSelector}>
           {(['admin', 'teacher', 'student', 'staff'] as UserType[]).map((type) => (
             <TouchableOpacity
@@ -444,7 +498,7 @@ export default function AddUserScreen() {
           {renderFormField('Password', 'password', 'Enter password', { secureTextEntry: true })}
           {renderFormField('Confirm Password', 'confirmPassword', 'Confirm password', { secureTextEntry: true })}
 
-          <View style={styles.fieldContainer}>
+          <View style={styles.fieldContainer} onLayout={trackFieldLayout('gender')}>
             <ThemedText style={styles.label}>Gender</ThemedText>
             <View style={styles.genderRow}>
               {(['Male', 'Female', 'Other', 'Prefer not to say'] as Gender[]).map((gender) => {
@@ -464,10 +518,22 @@ export default function AddUserScreen() {
           </View>
 
           <ThemedText style={styles.sectionSubtitle}>Address Information</ThemedText>
-          {renderFormField('Address', 'address', 'Enter address', { multiline: true })}
-          {renderFormField('City', 'city', 'Enter city')}
-          {renderFormField('State', 'state', 'Enter state')}
-          {renderFormField('Pin Code', 'pinCode', 'Enter 6-digit pin code', { keyboardType: 'numeric' })}
+          <AddressLookupField
+            address={formData.address}
+            setAddress={(value) => updateFormField('address', value)}
+            pincode={formData.pinCode}
+            setPincode={(value) => updateFormField('pinCode', value)}
+            city={formData.city}
+            setCity={(value) => updateFormField('city', value)}
+            state={formData.state}
+            setState={(value) => updateFormField('state', value)}
+            errors={{
+              address: errors.address,
+              city: errors.city,
+              state: errors.state,
+              pincode: errors.pinCode,
+            }}
+          />
 
           {userType === 'teacher' &&
             renderFormField('Qualifications', 'qualifications', 'Enter qualifications (e.g., B.Tech, M.Tech)', {
@@ -484,7 +550,7 @@ export default function AddUserScreen() {
                 keyboardType: 'phone-pad',
               })}
 
-              <View style={styles.fieldContainer}>
+              <View style={styles.fieldContainer} onLayout={trackFieldLayout('dateOfBirth')}>
                 <ThemedText style={styles.label}>Date of Birth</ThemedText>
                 <TouchableOpacity
                   style={[styles.dateInputButton, { borderColor: errors.dateOfBirth ? '#ff6b6b' : theme.tabIconDefault }]}
@@ -510,7 +576,7 @@ export default function AddUserScreen() {
 
               {renderFormField('Roll Number', 'rollNumber', 'Enter roll number')}
 
-              <View style={styles.fieldContainer}>
+              <View style={styles.fieldContainer} onLayout={trackFieldLayout('classId')}>
                 <ThemedText style={styles.label}>Select Class *</ThemedText>
                 {loadingClasses ? (
                   <View style={styles.loadingContainer}>
@@ -582,7 +648,7 @@ export default function AddUserScreen() {
               </View>
 
               <ThemedText style={styles.sectionSubtitle}>Auto-filled From Class</ThemedText>
-              <View style={styles.fieldContainer}>
+              <View style={styles.fieldContainer} onLayout={trackFieldLayout('dateOfAdmission')}>
                 <ThemedText style={styles.label}>Date of Admission</ThemedText>
                 <TouchableOpacity
                   style={[styles.dateInputButton, { borderColor: errors.dateOfAdmission ? '#ff6b6b' : theme.tabIconDefault }]}
@@ -653,6 +719,7 @@ export default function AddUserScreen() {
         </View>
       </Modal>
     </ThemedView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -832,6 +899,12 @@ export default function AddUserScreen() {
 // });
 
 const styles = StyleSheet.create({
+  keyboardContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     paddingBottom: 20,

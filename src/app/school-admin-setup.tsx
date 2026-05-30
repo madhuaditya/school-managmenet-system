@@ -84,7 +84,7 @@ export default function SchoolAdminSetupScreen() {
       }
 
       Alert.alert('Success', 'Admin created successfully.');
-      router.replace('/school-login');
+      router.replace('/');
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to create admin');
     } finally {

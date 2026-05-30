@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { apiService } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
@@ -16,11 +16,69 @@ export default function CreateAlertTab() {
   const role = typeof user?.role === 'string' ? user.role : user?.role?.role;
 
   const [userId, setUserId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<UserSuggestion[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const cacheRef = useRef<Record<string, UserSuggestion[]>>({});
 
   const isAdmin = useMemo(() => role === 'admin', [role]);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (query.length < 3) {
+      setSuggestions([]);
+      setSearchingUsers(false);
+      return;
+    }
+
+    const cacheKey = query.toLowerCase();
+    if (cacheRef.current[cacheKey]) {
+      setSuggestions(cacheRef.current[cacheKey]);
+      return;
+    }
+
+    setSearchingUsers(true);
+    const timeout = setTimeout(async () => {
+      try {
+        const response = await apiService.searchSchoolUsers({
+          q: query,
+          limit: 6,
+        });
+
+        if (!response.success || !response.data) {
+          throw new Error(response.msg || 'Failed to search users.');
+        }
+
+        cacheRef.current[cacheKey] = response.data;
+        setSuggestions(response.data);
+      } catch (error) {
+        setSuggestions([]);
+        Alert.alert('Search', error instanceof Error ? error.message : 'Failed to search users.');
+      } finally {
+        setSearchingUsers(false);
+      }
+    }, 350);
+
+    return () => {
+      clearTimeout(timeout);
+      setSearchingUsers(false);
+    };
+  }, [searchQuery]);
+
+  const selectUser = (entry: UserSuggestion) => {
+    setUserId(entry._id);
+    setSearchQuery(entry.phone ? `${entry.name} • ${entry.phone}` : entry.name);
+    setSuggestions([]);
+  };
+
+  const clearSelectedUser = () => {
+    setUserId('');
+    setSearchQuery('');
+    setSuggestions([]);
+  };
 
   const submit = async () => {
     if (!message.trim()) {
@@ -41,6 +99,8 @@ export default function CreateAlertTab() {
       }
 
       setUserId('');
+      setSearchQuery('');
+      setSuggestions([]);
       setTitle('');
       setMessage('');
       Alert.alert('Success', 'Alert created successfully.');
@@ -63,16 +123,57 @@ export default function CreateAlertTab() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <ThemedView style={[styles.card, { borderColor: theme.icon, backgroundColor: theme.background }]}>
         <ThemedText type="subtitle">Create Alert</ThemedText>
-        <ThemedText style={styles.hint}>Leave User ID empty to use backend default behavior.</ThemedText>
+        <ThemedText style={styles.hint}>
+          Search users by name, username or phone. Search starts only after 3 characters and waits for typing to pause.
+        </ThemedText>
 
-        <TextInput
-          value={userId}
-          onChangeText={setUserId}
-          editable={!submitting}
-          style={[styles.input, { borderColor: theme.icon, color: theme.text }]}
-          placeholder="Target user ID (optional)"
-          placeholderTextColor={theme.icon}
-        />
+        <View style={styles.searchBlock}>
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            editable={!submitting}
+            style={[styles.input, { borderColor: theme.icon, color: theme.text }]}
+            placeholder="Search user by name, username or phone"
+            placeholderTextColor={theme.icon}
+          />
+
+          {userId ? (
+            <Pressable onPress={clearSelectedUser} style={styles.clearSelection}>
+              <ThemedText style={styles.clearSelectionText}>Clear selected user</ThemedText>
+            </Pressable>
+          ) : null}
+
+          {searchingUsers ? (
+            <View style={styles.loaderRow}>
+              <ActivityIndicator size="small" color={theme.tint} />
+            </View>
+          ) : null}
+
+          {!searchingUsers && suggestions.length ? (
+            <View style={[styles.suggestionList, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+              {suggestions.map((entry) => (
+                <Pressable key={entry._id} onPress={() => selectUser(entry)} style={styles.suggestionItem}>
+                  <View style={styles.suggestionMeta}>
+                    <ThemedText type="defaultSemiBold">{entry.name}</ThemedText>
+                    <ThemedText style={styles.suggestionSubtext}>
+                      {[entry.username, entry.phone, entry.role].filter(Boolean).join(' • ')}
+                    </ThemedText>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
+          {searchQuery.trim().length > 0 && searchQuery.trim().length < 3 ? (
+            <ThemedText style={styles.metaHint}>Type at least 3 characters to search.</ThemedText>
+          ) : null}
+
+          {userId ? (
+            <ThemedText style={styles.metaHint}>Selected user ID: {userId}</ThemedText>
+          ) : (
+            <ThemedText style={styles.metaHint}>No user selected. Alert will use backend default behavior.</ThemedText>
+          )}
+        </View>
 
         <TextInput
           value={title}
@@ -107,6 +208,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   card: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 10 },
   hint: { opacity: 0.7, fontSize: 12 },
+  searchBlock: { gap: 8 },
   input: {
     borderWidth: 1,
     borderRadius: 8,
@@ -114,6 +216,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 10,
   },
+  suggestionList: {
+    borderWidth: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  suggestionItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#d4d4d8',
+  },
+  suggestionMeta: { gap: 4 },
+  suggestionSubtext: { fontSize: 12, opacity: 0.7 },
+  loaderRow: { paddingVertical: 8, alignItems: 'center' },
+  clearSelection: { alignSelf: 'flex-start' },
+  clearSelectionText: { color: '#2563EB', fontWeight: '600' },
+  metaHint: { fontSize: 12, opacity: 0.7 },
   textArea: { minHeight: 110, textAlignVertical: 'top' },
   submit: {
     marginTop: 8,
@@ -126,3 +245,13 @@ const styles = StyleSheet.create({
   submitText: { color: '#fff', fontWeight: '700' },
   disabled: { opacity: 0.65 },
 });
+
+type UserSuggestion = {
+  _id: string;
+  name: string;
+  username?: string;
+  email?: string;
+  phone?: string;
+  image?: string;
+  role?: string;
+};

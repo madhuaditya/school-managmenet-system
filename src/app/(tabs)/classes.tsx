@@ -22,7 +22,7 @@ import { useAuthStore } from '@/src/store/auth.store';
 import { Subject } from '@/src/types';
 
 
-type IdLabel = { _id: string; name: string };
+type IdLabel = { _id: string; name: string; subtitle?: string };
 
 interface ClassItem {
   _id: string;
@@ -45,6 +45,23 @@ interface TeacherItem {
   user?: { _id: string; name?: string; email?: string };
 }
 
+const getSubjectSubtitle = (subject: Subject) => {
+  const className = typeof subject.class === 'object' ? subject.class?.name : subject.class;
+  const teacherName =
+    typeof subject.teacher === 'object'
+      ? subject.teacher?.name || undefined
+      : subject.teacher;
+
+  const parts = [
+    subject.code ? `Code: ${subject.code}` : '',
+    className ? `Class: ${className}` : '',
+    teacherName ? `Teacher: ${teacherName}` : '',
+    typeof subject.maxMarks === 'number' ? `Max Marks: ${subject.maxMarks}` : '',
+  ].filter(Boolean);
+
+  return parts.join(' • ');
+};
+
 export default function ClassesTab() {
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -60,7 +77,7 @@ export default function ClassesTab() {
 
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [teachers, setTeachers] = useState<TeacherItem[]>([]);
-  const [subjects, setSubjects] = useState<Array<{ _id: string; name?: string }>>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
 
   const [newClassName, setNewClassName] = useState('');
   const [newClassGrade, setNewClassGrade] = useState('');
@@ -171,13 +188,19 @@ export default function ClassesTab() {
 
   const subjectOptions: IdLabel[] = useMemo(() => {
     const map = new Map<string, string>();
+    const subtitleMap = new Map<string, string>();
 
-     subjects.forEach((subject) => {
+    subjects.forEach((subject) => {
         if (subject._id && subject.name) {
           map.set(subject._id, subject.name);
+          subtitleMap.set(subject._id, getSubjectSubtitle(subject));
         }
       });
-    return Array.from(map.entries()).map(([id, name]) => ({ _id: id, name }));
+    return Array.from(map.entries()).map(([id, name]) => ({
+      _id: id,
+      name,
+      subtitle: subtitleMap.get(id),
+    }));
   }, [subjects]);
 
   const createClass = async () => {
@@ -309,7 +332,14 @@ export default function ClassesTab() {
       <Pressable
         style={[styles.dropdownButton, { borderColor: theme.icon, backgroundColor: theme.background }]}
         onPress={() => openPicker(title, options, value, onPick)}>
-        <ThemedText style={styles.dropdownText}>{selectedLabel}</ThemedText>
+        <View style={styles.dropdownLabelWrap}>
+          <ThemedText style={styles.dropdownText}>{selectedLabel}</ThemedText>
+          {options.find((item) => item._id === value)?.subtitle ? (
+            <ThemedText style={styles.dropdownSubtitle} numberOfLines={1}>
+              {options.find((item) => item._id === value)?.subtitle}
+            </ThemedText>
+          ) : null}
+        </View>
         <ThemedText style={styles.dropdownArrow}>⌄</ThemedText>
       </Pressable>
     );
@@ -361,7 +391,7 @@ export default function ClassesTab() {
           </ThemedView>
 
           <ThemedView style={[styles.section, { borderColor: theme.icon }]}> 
-            <ThemedText type="subtitle">Assign Teacher to Class</ThemedText>
+            <ThemedText type="subtitle">Add Class Teacher</ThemedText>
             <ThemedText style={styles.label}>Select Class</ThemedText>
             {renderDropdown('Select Class', classOptions, selectedClassForTeacher, setSelectedClassForTeacher, 'Select class')}
             <ThemedText style={styles.label}>Select Teacher</ThemedText>
@@ -422,6 +452,11 @@ export default function ClassesTab() {
                         closePicker();
                       }}>
                       <ThemedText style={[styles.modalItemText, selected && styles.modalItemTextSelected]}>{item.name}</ThemedText>
+                      {item.subtitle ? (
+                        <ThemedText style={[styles.modalItemSubtitle, selected && styles.modalItemTextSelected]} numberOfLines={2}>
+                          {item.subtitle}
+                        </ThemedText>
+                      ) : null}
                     </Pressable>
                   );
                 }}
@@ -638,6 +673,14 @@ const styles = StyleSheet.create({
   dropdownText: {
     flex: 1,
   },
+  dropdownLabelWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  dropdownSubtitle: {
+    fontSize: 11,
+    opacity: 0.7,
+  },
   dropdownArrow: {
     fontSize: 18,
     marginLeft: 8,
@@ -663,6 +706,11 @@ const styles = StyleSheet.create({
   },
   modalItemText: {
     fontWeight: '600',
+  },
+  modalItemSubtitle: {
+    marginTop: 4,
+    fontSize: 11,
+    opacity: 0.75,
   },
   modalItemTextSelected: {
     color: '#fff',

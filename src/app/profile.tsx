@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -15,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { apiService } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import AddressLookupField from '@/components/forms/AddressLookupField';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/src/store/auth.store';
@@ -256,8 +259,15 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView
+      style={styles.keyboardContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 84 : 0}>
+      <ThemedView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag">
         <View style={styles.avatarWrap}>
           {profileImage ? (
             <Image source={{ uri: profileImage }} style={styles.avatarImage} resizeMode="cover" />
@@ -302,50 +312,19 @@ export default function ProfileScreen() {
           />
         </View>
 
-        <View style={styles.fieldWrap}>
-          <ThemedText style={styles.label}>Address</ThemedText>
-          <TextInput
-            value={form.address}
-            onChangeText={(v) => updateField('address', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
-            placeholder="Enter address"
-            placeholderTextColor={theme.tabIconDefault}
+        <ThemedView style={styles.addressSection}>
+          <ThemedText style={styles.sectionLabel}>Address</ThemedText>
+          <AddressLookupField
+            address={form.address}
+            setAddress={(value) => updateField('address', value)}
+            pincode={form.pinCode}
+            setPincode={(value) => updateField('pinCode', value)}
+            city={form.city}
+            setCity={(value) => updateField('city', value)}
+            state={form.state}
+            setState={(value) => updateField('state', value)}
           />
-        </View>
-
-        <View style={styles.fieldWrap}>
-          <ThemedText style={styles.label}>City</ThemedText>
-          <TextInput
-            value={form.city}
-            onChangeText={(v) => updateField('city', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
-            placeholder="Enter city"
-            placeholderTextColor={theme.tabIconDefault}
-          />
-        </View>
-
-        <View style={styles.fieldWrap}>
-          <ThemedText style={styles.label}>State</ThemedText>
-          <TextInput
-            value={form.state}
-            onChangeText={(v) => updateField('state', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
-            placeholder="Enter state"
-            placeholderTextColor={theme.tabIconDefault}
-          />
-        </View>
-
-        <View style={styles.fieldWrap}>
-          <ThemedText style={styles.label}>Pin Code</ThemedText>
-          <TextInput
-            value={form.pinCode}
-            onChangeText={(v) => updateField('pinCode', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
-            placeholder="Enter pin code"
-            keyboardType="numeric"
-            placeholderTextColor={theme.tabIconDefault}
-          />
-        </View>
+        </ThemedView>
 
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: saving ? theme.tabIconDefault : theme.tint }]}
@@ -375,10 +354,14 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </ScrollView>
     </ThemedView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -429,10 +412,19 @@ const styles = StyleSheet.create({
   fieldWrap: {
     marginBottom: 12,
   },
+  addressSection: {
+    marginBottom: 12,
+    gap: 8,
+  },
   label: {
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 5,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 0,
   },
   input: {
     borderWidth: 1,

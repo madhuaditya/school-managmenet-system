@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  KeyboardEvent,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -39,8 +43,39 @@ const defaultForm: SchoolForm = {
 
 export default function SchoolRegisterScreen() {
   const router = useRouter();
+
+  React.useEffect(() => {
+    router.replace('/');
+  }, [router]);
+
+  return null;
+
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<SchoolForm>(defaultForm);
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  const scrollRef = React.useRef<ScrollView>(null);
+  const fieldYRef = React.useRef<Record<string, number>>({});
+
+  React.useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = (event: KeyboardEvent) => {
+      setKeyboardInset(event.endCoordinates?.height || 0);
+    };
+
+    const onHide = () => {
+      setKeyboardInset(0);
+    };
+
+    const showSub = Keyboard.addListener(showEvent, onShow);
+    const hideSub = Keyboard.addListener(hideEvent, onHide);
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const update = (key: keyof SchoolForm, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -94,9 +129,34 @@ export default function SchoolRegisterScreen() {
     }
   };
 
+  const trackFieldLayout = (key: string) => (event: any) => {
+    fieldYRef.current[key] = event.nativeEvent.layout.y;
+  };
+
+  const scrollToField = (key: string) => {
+    const y = fieldYRef.current[key];
+    if (typeof y !== 'number') return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 20), animated: true });
+    });
+  };
+
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={0}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[
+          styles.content,
+          keyboardInset > 0 ? styles.contentWithKeyboard : null,
+          { paddingBottom: keyboardInset + 16 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        scrollIndicatorInsets={{ bottom: keyboardInset }}
+        showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>School MIS</Text>
         <Text style={styles.subtitle}>Create School</Text>
 
@@ -113,22 +173,29 @@ export default function SchoolRegisterScreen() {
         </View>
 
         <View style={styles.form}>
+          <View onLayout={trackFieldLayout('schoolId')}>
           <TextInput
             style={styles.input}
             placeholder="School ID"
             placeholderTextColor="#999"
             value={form.schoolId}
             onChangeText={(v) => update('schoolId', v)}
+            onFocus={() => scrollToField('schoolId')}
             editable={!loading}
           />
+          </View>
+          <View onLayout={trackFieldLayout('schoolName')}>
           <TextInput
             style={styles.input}
             placeholder="School Name"
             placeholderTextColor="#999"
             value={form.schoolName}
             onChangeText={(v) => update('schoolName', v)}
+            onFocus={() => scrollToField('schoolName')}
             editable={!loading}
           />
+          </View>
+          <View onLayout={trackFieldLayout('email')}>
           <TextInput
             style={styles.input}
             placeholder="Email"
@@ -137,8 +204,11 @@ export default function SchoolRegisterScreen() {
             autoCapitalize="none"
             value={form.email}
             onChangeText={(v) => update('email', v)}
+            onFocus={() => scrollToField('email')}
             editable={!loading}
           />
+          </View>
+          <View onLayout={trackFieldLayout('password')}>
           <TextInput
             style={styles.input}
             placeholder="Password"
@@ -146,32 +216,44 @@ export default function SchoolRegisterScreen() {
             secureTextEntry
             value={form.password}
             onChangeText={(v) => update('password', v)}
+            onFocus={() => scrollToField('password')}
             editable={!loading}
           />
+          </View>
+          <View onLayout={trackFieldLayout('address')}>
           <TextInput
             style={styles.input}
             placeholder="Address"
             placeholderTextColor="#999"
             value={form.address}
             onChangeText={(v) => update('address', v)}
+            onFocus={() => scrollToField('address')}
             editable={!loading}
           />
+          </View>
+          <View onLayout={trackFieldLayout('city')}>
           <TextInput
             style={styles.input}
             placeholder="City"
             placeholderTextColor="#999"
             value={form.city}
             onChangeText={(v) => update('city', v)}
+            onFocus={() => scrollToField('city')}
             editable={!loading}
           />
+          </View>
+          <View onLayout={trackFieldLayout('state')}>
           <TextInput
             style={styles.input}
             placeholder="State"
             placeholderTextColor="#999"
             value={form.state}
             onChangeText={(v) => update('state', v)}
+            onFocus={() => scrollToField('state')}
             editable={!loading}
           />
+          </View>
+          <View onLayout={trackFieldLayout('pinCode')}>
           <TextInput
             style={styles.input}
             placeholder="Pin Code"
@@ -179,8 +261,10 @@ export default function SchoolRegisterScreen() {
             keyboardType="numeric"
             value={form.pinCode}
             onChangeText={(v) => update('pinCode', v)}
+            onFocus={() => scrollToField('pinCode')}
             editable={!loading}
           />
+          </View>
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -190,7 +274,7 @@ export default function SchoolRegisterScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -204,6 +288,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 24,
+  },
+  contentWithKeyboard: {
+    justifyContent: 'flex-start',
+    paddingTop: 20,
   },
   title: {
     fontSize: 28,

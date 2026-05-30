@@ -2,11 +2,18 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getAllowedRolesForPath, PUBLIC_PATHS } from '@/src/constants/accessControl';
 import { useAuthStore } from '@/src/store/auth.store';
+import { useChatStore } from '@/src/store/chat.store';
+import {
+  addPushNotificationResponseListener,
+  canUseRemotePushNotifications,
+  registerForPushNotificationsAsync,
+  syncPushTokenWithServer,
+} from '@/src/services/pushNotifications';
 
 const lightColors = {
   bg: "#F9FAFB",
@@ -27,8 +34,12 @@ const darkColors = {
 export default function RootLayout() {
   const router = useRouter();
   const pathname = usePathname();
+  const pushTokenRef = useRef<string | null>(null);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const initializeChatSocket = useChatStore((state) => state.initializeSocket);
+  const disconnectChatSocket = useChatStore((state) => state.disconnectSocket);
 
   const role = typeof user?.role === 'string' ? user.role : user?.role?.role;
 
@@ -45,6 +56,60 @@ export default function RootLayout() {
       router.replace('/dashboard');
     }
   }, [isAuthenticated, pathname, role, router]);
+
+  useEffect(() => {
+    if (isAuthenticated && accessToken) {
+      initializeChatSocket(accessToken);
+      return;
+    }
+    disconnectChatSocket();
+  }, [accessToken, disconnectChatSocket, initializeChatSocket, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !accessToken || !canUseRemotePushNotifications()) {
+      pushTokenRef.current = null;
+      return;
+    }
+
+    let active = true;
+
+    const registerPushToken = async () => {
+      try {
+        const pushToken = await registerForPushNotificationsAsync();
+        if (!active || !pushToken || pushTokenRef.current === pushToken) {
+          return;
+        }
+
+        await syncPushTokenWithServer(pushToken);
+        pushTokenRef.current = pushToken;
+      } catch (error) {
+        console.warn('Push notification setup failed:', error);
+      }
+    };
+
+    void registerPushToken();
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken, isAuthenticated]);
+
+  useEffect(() => {
+    let subscription: { remove: () => void } | null = null;
+
+    void addPushNotificationResponseListener((response) => {
+      const data = response.notification.request.content.data;
+      if (data?.screen === 'my-alerts' || data?.type === 'alert') {
+        router.push('/my-alerts');
+      }
+    }).then((nextSubscription) => {
+      subscription = nextSubscription;
+    });
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [router]);
 
   const colorScheme = useColorScheme();
   const colors = colorScheme === 'dark' ? darkColors : lightColors;
@@ -81,10 +146,14 @@ export default function RootLayout() {
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="school-register" options={{ headerShown: false }} />
-        <Stack.Screen name="school-login" options={{ headerShown: false }} />
         <Stack.Screen name="school-admin-setup" options={{ headerShown: false }} />
         <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+        <Stack.Screen name="about" options={{ title: 'About' }} />
+        <Stack.Screen name="contact" options={{ title: 'Contact' }} />
+        <Stack.Screen name="feedback" options={{ title: 'Feedback' }} />
+        <Stack.Screen name="chat/[conversationId]" options={{ title: 'Chat' }} />
+        <Stack.Screen name="chat/contacts" options={{ title: 'New Chat' }} />
+        <Stack.Screen name="chat/new-group" options={{ title: 'New Group' }} />
 
         <Stack.Screen name="admin" options={{ title: 'Admin' }} />
         <Stack.Screen name="students" options={{ title: 'Students' }} />

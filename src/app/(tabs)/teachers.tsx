@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 
 import { apiService } from '@/api/client';
@@ -7,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import AttendanceRoster from '@/components/AttendanceRoster';
 
 interface TeacherUser {
   _id: string;
@@ -50,6 +52,11 @@ export default function TeachersScreen() {
   const [error, setError] = useState<string | null>(null);
   const [submittingForTeacher, setSubmittingForTeacher] = useState<string | null>(null);
   const [todayStatusByTeacher, setTodayStatusByTeacher] = useState<Record<string, AttendanceState>>({});
+  const [mode, setMode] = useState<'list' | 'card'>('card');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'not-marked' | 'present' | 'absent' | 'leave'>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [modeOpen, setModeOpen] = useState(false);
   const colorScheme = useColorScheme();
 
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
@@ -79,31 +86,77 @@ export default function TeachersScreen() {
 
   const teacherCount = useMemo(() => teachers.length, [teachers]);
 
+  const statusFilterOptions = useMemo(() => ([
+    { label: 'All', value: 'all' },
+    { label: 'Not Marked', value: 'not-marked' },
+    { label: 'Present', value: 'present' },
+    { label: 'Absent', value: 'absent' },
+    { label: 'Leave', value: 'leave' },
+  ] as const), []);
+
+  const activeFilterLabel = useMemo(() => statusFilterOptions.find((option) => option.value === statusFilter)?.label || 'All', [statusFilter, statusFilterOptions]);
+  const activeModeLabel = mode === 'card' ? 'Card' : 'List';
+  const isCardMode = mode === 'card';
+
+  const filteredTeachers = useMemo(() => {
+    const search = searchQuery.trim().toLowerCase();
+
+    return teachers.filter((teacher) => {
+      const status = todayStatusByTeacher[teacher._id] || 'not-marked';
+      const matchesStatus = statusFilter === 'all' || status === statusFilter;
+      if (!matchesStatus) return false;
+
+      if (!search) return true;
+
+      const searchableText = [
+        teacher.user?.name,
+        teacher.user?.email,
+        teacher.user?.phone,
+        teacher.classTeacher?.name,
+        teacher.classTeacher?.section,
+        ...(teacher.teachSubjects || []).map((subject) => subject.name),
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return searchableText.includes(search);
+    });
+  }, [teachers, searchQuery, statusFilter, todayStatusByTeacher]);
+
   const hydrateTodayAttendanceStatus = async (teacherList: TeacherRecord[]) => {
     const statusMap: Record<string, AttendanceState> = {};
 
-    await Promise.all(
-      teacherList.map(async (teacher) => {
+    try {
+      const attendanceResponse = await apiService.getTodayAttendanceByRole('teacher');
+      const attendanceList = attendanceResponse.data?.attendance || [];
+
+      const statusByUserId = new Map<string, AttendanceState>();
+      attendanceList.forEach((entry) => {
+        const status = entry.status || 'not-marked';
+        [entry.userId, entry._id].forEach((key) => {
+          if (key) {
+            statusByUserId.set(String(key), status);
+          }
+        });
+      });
+
+      teacherList.forEach((teacher) => {
         const teacherUserId = teacher.user?._id;
         if (!teacherUserId) {
           statusMap[teacher._id] = 'not-marked';
           return;
         }
 
-        try {
-          const attendanceResponse = await apiService.getTodayAttendance(teacherUserId);
-          const attendancePayload = attendanceResponse.data as
-            | { attendance?: Array<{ date?: string; status?: AttendanceState }> }
-            | undefined;
-          const attendanceList = attendancePayload?.attendance || [];
-          const todayRecord = attendanceList[0];
-
-          statusMap[teacher._id] = todayRecord?.status || 'not-marked';
-        } catch {
-          statusMap[teacher._id] = 'not-marked';
+        const status = statusByUserId.get(String(teacherUserId)) || 'not-marked';
+        statusMap[teacher._id] = status;
+        statusMap[String(teacherUserId)] = status;
+      });
+    } catch {
+      teacherList.forEach((teacher) => {
+        statusMap[teacher._id] = 'not-marked';
+        if (teacher.user?._id) {
+          statusMap[String(teacher.user._id)] = 'not-marked';
         }
-      })
-    );
+      });
+    }
 
     setTodayStatusByTeacher(statusMap);
   };
@@ -139,7 +192,7 @@ export default function TeachersScreen() {
           ...prev,
           [teacher._id]: status,
         }));
-        Alert.alert('Attendance Updated', `${teacher.user?.name || 'Teacher'} marked ${status}.`);
+        // Alert.alert('Attendance Updated', `${teacher.user?.name || 'Teacher'} marked ${status}.`);
       } else {
         Alert.alert('Failed', response.msg || 'Could not mark attendance.');
       }
@@ -250,19 +303,102 @@ export default function TeachersScreen() {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.header}>
-        <ThemedText style={styles.count}>{teacherCount} teachers found</ThemedText>
+        <View style={styles.searchWrap}>
+          <MaterialCommunityIcons name="magnify" size={18} color={theme.icon} style={styles.searchIcon} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search teachers"
+            placeholderTextColor={theme.icon}
+            style={[styles.searchInput, { color: theme.text, borderColor: theme.icon, backgroundColor: theme.background }]}
+          />
+        </View>
+        <View style={styles.toolbarRow}>
+          <View style={styles.filterWrap}>
+            <Pressable
+              onPress={() => {
+                setFilterOpen((prev) => !prev);
+                setModeOpen(false);
+              }}
+              style={({ pressed }) => [styles.dropdownButton, pressed && styles.modeChipPressed]}>
+              <ThemedText style={styles.dropdownButtonText}>Filter: {activeFilterLabel}</ThemedText>
+              <MaterialCommunityIcons name={filterOpen ? 'chevron-up' : 'chevron-down'} size={18} color={theme.tint} />
+            </Pressable>
+
+            {filterOpen ? (
+              <View style={[styles.filterMenu, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+                {statusFilterOptions.map((option) => {
+                  const isActive = statusFilter === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => {
+                        setStatusFilter(option.value);
+                        setFilterOpen(false);
+                      }}
+                      style={({ pressed }) => [styles.filterOption, isActive && styles.filterOptionActive, pressed && styles.filterOptionPressed]}>
+                      <ThemedText style={[styles.filterOptionText, isActive && styles.filterOptionTextActive]}>{option.label}</ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.filterWrap}>
+            <Pressable
+              onPress={() => {
+                setModeOpen((prev) => !prev);
+                setFilterOpen(false);
+              }}
+              style={({ pressed }) => [styles.dropdownButton, isCardMode && styles.dropdownButtonActive, pressed && styles.modeChipPressed]}>
+              <ThemedText style={[styles.dropdownButtonText, isCardMode && styles.dropdownButtonTextActive]}>View: {activeModeLabel}</ThemedText>
+              <MaterialCommunityIcons name={modeOpen ? 'chevron-up' : 'chevron-down'} size={18} color={isCardMode ? '#fff' : theme.tint} />
+            </Pressable>
+
+            {modeOpen ? (
+              <View style={[styles.filterMenu, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+                {(['card', 'list'] as const).map((option) => {
+                  const isActive = mode === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => {
+                        setMode(option);
+                        setModeOpen(false);
+                      }}
+                      style={({ pressed }) => [styles.filterOption, isActive && styles.filterOptionActive, pressed && styles.filterOptionPressed]}>
+                      <ThemedText style={[styles.filterOptionText, isActive && styles.filterOptionTextActive]}>{option === 'card' ? 'Card' : 'List'}</ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
+        </View>
+        <ThemedText style={styles.count}>{teacherCount} teachers</ThemedText>
       </View>
 
-      <FlatList
-        data={teachers}
-        keyExtractor={(item) => item._id}
-        renderItem={renderTeacherCard}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <ThemedView style={styles.centered}>
-            <ThemedText>No teachers found</ThemedText>
-          </ThemedView>
-        }
+      <AttendanceRoster
+        role='Teacher'
+        roster={filteredTeachers.map((t) => ({
+          _key: t._id,
+          _id: t._id,
+          name: t.user?.name || 'Unnamed Teacher',
+          image: t.user?.image || null,
+          rollNumber: t.classTeacher?.name || undefined,
+          studentIdCode: t.user?._id,
+          email: t.user?.email,
+          fatherName: null,
+          motherName: null,
+            currentStatus: todayStatusByTeacher[t._id] || (t.user?._id ? todayStatusByTeacher[t.user._id] : undefined) || 'not-marked',
+        }))}
+        mode={mode}
+        updateStatus={(row, status) => {
+          const target = teachers.find((x) => x._id === row._id);
+          if (!target) return;
+          void markTeacherAttendance(target, status);
+        }}
       />
     </ThemedView>
   );
@@ -277,6 +413,73 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 12,
   },
+  searchWrap: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  searchIcon: {
+    marginLeft: 10,
+    marginRight: 6,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingRight: 12,
+    fontWeight: '600',
+  },
+  toolbarRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  filterWrap: { position: 'relative', flex: 1 },
+  modeChip: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(100,116,139,0.22)',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(100,116,139,0.22)',
+  },
+  dropdownButtonActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  dropdownButtonText: {
+    fontWeight: '800',
+    color: '#2563eb',
+  },
+  dropdownButtonTextActive: {
+    color: '#fff',
+  },
+  modeChipActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  modeChipText: {
+    fontWeight: '800',
+    color: '#2563eb',
+  },
+  modeChipTextActive: {
+    color: '#fff',
+  },
+  modeChipPressed: {
+    opacity: 0.9,
+  },
   subtitle: {
     marginTop: 6,
     opacity: 0.8,
@@ -285,6 +488,26 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontWeight: '600',
   },
+  filterMenu: {
+    position: 'absolute',
+    top: 42,
+    right: 0,
+    zIndex: 20,
+    minWidth: 160,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  filterOption: { borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
+  filterOptionActive: { backgroundColor: 'rgba(37,99,235,0.12)' },
+  filterOptionPressed: { opacity: 0.82 },
+  filterOptionText: { fontWeight: '700' },
+  filterOptionTextActive: { color: '#2563eb' },
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 24,

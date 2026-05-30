@@ -14,6 +14,25 @@ const getRole = (role?: UserRole | { role?: UserRole }) => {
   return typeof role === 'string' ? role : role.role || '';
 };
 
+const getApplicantName = (leave: LeaveRequest) => {
+  const applicant = leave.applicantUser;
+  if (applicant && typeof applicant === 'object') {
+    return applicant.name || applicant.email || applicant._id;
+  }
+
+  const user = leave.userId;
+  if (user && typeof user === 'object') {
+    return user.name || user.email || user._id;
+  }
+
+  return applicant || user || 'User';
+};
+
+const getLeaveDetails = (leave: LeaveRequest) => {
+  const parts = [leave.leaveType, leave.purpose || leave.reason].filter(Boolean);
+  return parts.length ? parts.join(' • ') : 'No leave details provided';
+};
+
 export default function LeaveReviewTab() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
@@ -113,17 +132,17 @@ export default function LeaveReviewTab() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={<ThemedText style={styles.emptyText}>No leave requests found.</ThemedText>}
           renderItem={({ item }) => {
-            const actor = typeof item.userId === 'object' ? item.userId : undefined;
             return (
               <ThemedView style={[styles.card, { borderColor: theme.icon, backgroundColor: theme.background }]}>
                 <View style={styles.rowBetween}>
-                  <ThemedText type="defaultSemiBold">{actor?.name || 'User'}</ThemedText>
+                  <ThemedText type="defaultSemiBold">{getApplicantName(item)}</ThemedText>
                   <ThemedText style={styles.statusText}>{item.status.toUpperCase()}</ThemedText>
                 </View>
 
                 <ThemedText style={styles.metaText}>From: {new Date(item.startDate).toLocaleDateString()}</ThemedText>
                 <ThemedText style={styles.metaText}>To: {new Date(item.endDate).toLocaleDateString()}</ThemedText>
-                <ThemedText>{item.reason || 'No reason provided'}</ThemedText>
+                <ThemedText>{getLeaveDetails(item)}</ThemedText>
+                {item.reviewRemark ? <ThemedText style={styles.metaText}>Review: {item.reviewRemark}</ThemedText> : null}
 
                 <TextInput
                   value={remarks[item._id] || ''}
