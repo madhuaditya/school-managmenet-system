@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Entypo from '@expo/vector-icons/Entypo';
 
 import { apiService } from '@/api/client';
 import {
@@ -847,7 +848,7 @@ function SectionCard({
         </View>
         <View style={styles.sectionHeaderActions}>
           <View style={[styles.sectionBadge, { backgroundColor: palette.cardSoft, borderColor: palette.border }]}>
-            <FontAwesome6 name="megaphone" size={14} color={palette.subText} />
+            <Entypo name="megaphone" size={24} color={palette.subText}/>
           </View>
           <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={22} color={palette.subText} />
         </View>

@@ -49,6 +49,7 @@ export const registerForPushNotificationsAsync = async (): Promise<string | null
     status?: string;
   };
   let finalGranted = existingPermissions.granted ?? existingPermissions.status === 'granted';
+  // console.log('Existing notification permissions:', existingPermissions);
 
   if (!finalGranted) {
     const requestedPermissions = (await Notifications.requestPermissionsAsync()) as {

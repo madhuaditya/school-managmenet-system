@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { apiService } from '@/api/client';
 import { LoginCredentials, User, UserRole,OTPLoginCredentials } from '@/src/types';
+import { registerSessionClearHandler } from '../services/sessionManager';
 
 interface AuthState {
   user: User | null;
@@ -90,7 +91,7 @@ export const useAuthStore = create<AuthState>()(
             role: data.role?.role || 'admin',
             image: data.user?.image,
             school: data.school,
-            willExpire: Date.now() + 60 * 60 * 1000, // Example: token expires in 60 minutes
+            willExpire: Date.now() + 60 * 60 * 1000 * 24 * 20, // Example: token expires in 20 days, adjust as needed
           };
 
           set({
@@ -99,8 +100,9 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: data.refreshToken,
             isAuthenticated: true,
             isLoading: false,
-            willExpire: Date.now() + 60 * 60 * 1000,
+            willExpire: Date.now() + 60 * 60 * 1000 * 24* 20,
           });
+          console.log('Login successful, user:', user);
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -141,3 +143,7 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
+registerSessionClearHandler(() => {
+  useAuthStore.getState().clearAuth();
+});

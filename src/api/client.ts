@@ -38,6 +38,7 @@ import {
   MessagingMessage,
 } from '@/src/types';
 // import { useAuthStore } from '@/src/store/auth.store';
+import { forceLogoutAndRedirect } from '../src/services/sessionManager';
 type RefreshResponse = ApiResponse<{ accessToken: string }>;
 
 class ApiService {
@@ -72,16 +73,9 @@ class ApiService {
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        if (error.response?.status === 401) {
-          // Clear persisted zustand store and legacy keys on unauthorized
-          await AsyncStorage.removeItem('school-mis-auth-store');
-          try {
-            await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-            await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-            await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
-          } catch (e) {
-            // ignore
-          }
+        if (error.response?.status === 401 || error.response?.status === 444) {
+          // Clear persisted zustand store and legacy keys on unauthorized/forced logout.
+          await forceLogoutAndRedirect();
         }
         return Promise.reject(this.normalizeError(error));
       },
