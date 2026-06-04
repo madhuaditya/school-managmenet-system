@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import { apiService } from '@/api/client';
 
 const getProjectId = () =>
-  Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId || null;
+   '48f61c07-10ce-4385-93d3-930696c3524f';
 
 const isExpoGo = () =>
   Constants.appOwnership === 'expo' || Constants.executionEnvironment === 'storeClient';
@@ -63,13 +63,22 @@ export const registerForPushNotificationsAsync = async (): Promise<string | null
     return null;
   }
 
-  const projectId = getProjectId();
-  if (!projectId) {
-    return null;
-  }
+  const projectId = '48f61c07-10ce-4385-93d3-930696c3524f';
 
-  const token = await Notifications.getExpoPushTokenAsync({ projectId });
-  return token.data;
+  try {
+  console.log('Project ID:', projectId);
+
+  const tokenResponse = await Notifications.getExpoPushTokenAsync({
+    projectId,
+  });
+
+  console.log('Expo Push Token Response:', tokenResponse);
+
+  return tokenResponse.data;
+} catch (error) {
+  console.error('Failed to get Expo push token:', error);
+  return null;
+}
 };
 
 export const syncPushTokenWithServer = async (pushToken: string | null | undefined): Promise<void> => {

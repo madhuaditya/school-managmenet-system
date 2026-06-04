@@ -2,12 +2,14 @@ import { Directory, File, Paths } from 'expo-file-system';
 
 const LOG_DIRECTORY = new Directory(Paths.document, 'logs');
 const LOG_FILE = new File(LOG_DIRECTORY, 'console-errors.jsonl');
-const MAX_LOG_FILE_SIZE = 1024 * 1024;
+
+const MAX_LOG_FILE_SIZE = 1024 * 1024; // 1 MB
 
 let initialized = false;
+let initializationPromise: Promise<void> | null = null;
+
 let originalConsoleLog: typeof console.log | null = null;
 let originalConsoleError: typeof console.error | null = null;
-let initializationPromise: Promise<void> | null = null;
 
 const safeSerialize = (value: unknown) => {
   if (value instanceof Error) {
@@ -31,15 +33,30 @@ const safeSerialize = (value: unknown) => {
 
 const ensureLogStorage = async () => {
   try {
-    LOG_DIRECTORY.create();
+    if (!LOG_DIRECTORY.exists) {
+      LOG_DIRECTORY.create({ intermediates: true });
+    }
+
+    if (!LOG_FILE.exists) {
+      LOG_FILE.create();
+    }
   } catch {
-    // Directory may already exist.
+    // ignore
   }
 };
 
 const rotateLogIfNeeded = async () => {
-  if (LOG_FILE.exists && (LOG_FILE.size ?? 0) > MAX_LOG_FILE_SIZE) {
-    LOG_FILE.delete();
+  try {
+    if (
+      LOG_FILE.exists &&
+      typeof LOG_FILE.size === 'number' &&
+      LOG_FILE.size > MAX_LOG_FILE_SIZE
+    ) {
+      LOG_FILE.delete();
+      LOG_FILE.create();
+    }
+  } catch {
+    // ignore
   }
 };
 
@@ -47,11 +64,21 @@ const appendLogLine = async (line: string) => {
   await ensureLogStorage();
   await rotateLogIfNeeded();
 
-  const existing = LOG_FILE.exists ? LOG_FILE.text() : '';
-  await LOG_FILE.write(`${existing}${line}\n`);
+  try {
+    const existingContent = LOG_FILE.exists
+      ? LOG_FILE.text()
+      : '';
+
+    LOG_FILE.write(`${existingContent}${line}\n`);
+  } catch (error) {
+    originalConsoleError?.('Failed to append log:', error);
+  }
 };
 
-const createLogger = (level: 'log' | 'error', originalMethod: typeof console.log | typeof console.error | null) => {
+const createLogger = (
+  level: 'log' | 'error',
+  originalMethod: typeof console.log | typeof console.error | null,
+) => {
   return (...args: unknown[]) => {
     originalMethod?.(...args);
 
@@ -62,7 +89,10 @@ const createLogger = (level: 'log' | 'error', originalMethod: typeof console.log
     };
 
     void appendLogLine(JSON.stringify(payload)).catch((error) => {
-      originalConsoleError?.('Failed to persist console log:', error);
+      originalConsoleError?.(
+        'Failed to persist console log:',
+        error,
+      );
     });
   };
 };
@@ -74,6 +104,8 @@ export const initializeConsoleErrorLogger = async () => {
 
   if (!initializationPromise) {
     initializationPromise = (async () => {
+      await ensureLogStorage();
+
       originalConsoleLog = console.log.bind(console);
       originalConsoleError = console.error.bind(console);
 
@@ -87,4 +119,28 @@ export const initializeConsoleErrorLogger = async () => {
   await initializationPromise;
 };
 
-export const getConsoleErrorLogPath = () => LOG_FILE;
+export const getConsoleErrorLogPath = () => LOG_FILE.uri;
+
+export const getLogsContent = async (): Promise<string> => {
+  try {
+    if (!LOG_FILE.exists) {
+      return '';
+    }
+
+    return LOG_FILE.text();
+  } catch {
+    return '';
+  }
+};
+
+export const clearLogs = async () => {
+  try {
+    if (LOG_FILE.exists) {
+      LOG_FILE.delete();
+    }
+
+    LOG_FILE.create();
+  } catch (error) {
+    originalConsoleError?.('Failed to clear logs:', error);
+  }
+};

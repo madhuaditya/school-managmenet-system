@@ -5,6 +5,7 @@ import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, u
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DRAWER_FOOTER_ACTIONS, getDrawerQuickLinksForRole } from '@/src/constants/drawerMenu';
+import { exportLogsSnapshotToDownloads } from '@/src/services/logger';
 import { useAuthStore } from '@/src/store/auth.store';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
@@ -52,6 +53,7 @@ export default function TabLayout() {
 
   const userInitial = (user?.name?.trim()?.charAt(0) || 'U').toUpperCase();
   const drawerLinks = useMemo(() => getDrawerQuickLinksForRole(role, user?._id), [role, user?._id]);
+  const [exportingLogs, setExportingLogs] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -348,9 +350,34 @@ export default function TabLayout() {
                 <Text style={[styles.drawerRole, { color: colors.subText }]}>{role || 'guest'}</Text>
               </View>
             </View>
-            <Pressable onPress={closeDrawer} style={styles.drawerClose}>
-              <MaterialIcons name="close" size={22} color={colors.text} />
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              <Pressable
+                onPress={async () => {
+                  try {
+                    setExportingLogs(true);
+                    const dest = await exportLogsSnapshotToDownloads();
+                    if (dest) {
+                      // eslint-disable-next-line no-alert
+                      alert(`Logs exported to: ${dest}`);
+                    } else {
+                      alert('Export failed');
+                    }
+                  } catch (err) {
+                    // eslint-disable-next-line no-alert
+                    alert(String(err));
+                  } finally {
+                    setExportingLogs(false);
+                  }
+                }}
+                style={[styles.drawerClose, { marginRight: 8 }]}
+              >
+                <MaterialIcons name={exportingLogs ? 'autorenew' : 'file-download'} size={20} color={colors.text} />
+              </Pressable>
+
+              <Pressable onPress={closeDrawer} style={styles.drawerClose}>
+                <MaterialIcons name="close" size={22} color={colors.text} />
+              </Pressable>
+            </View>
           </View>
 
           <ScrollView contentContainerStyle={styles.drawerContent} showsVerticalScrollIndicator={false}>

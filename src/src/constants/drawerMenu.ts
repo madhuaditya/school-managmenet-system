@@ -26,6 +26,13 @@ export const DRAWER_PUBLIC_LINKS: Array<DashboardModule & { route: string }> = [
     color: '#7C3AED',
     route: '/feedback',
   },
+  {
+    id: 'logs',
+    label: 'App Logs',
+    icon: 'file-text-outline',
+    color: '#64748B',
+    route: '/logs',
+  },
 ];
 
 export type DrawerFooterAction =
