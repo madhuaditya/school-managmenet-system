@@ -78,7 +78,7 @@ export const syncPushTokenWithServer = async (pushToken: string | null | undefin
   try {
     await apiService.registerPushToken(pushToken);
   } catch (error) {
-    console.warn('Failed to register push token:', error);
+    console.error('Failed to register push token:', error);
   }
 };
 

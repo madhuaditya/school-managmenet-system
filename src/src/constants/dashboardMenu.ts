@@ -9,10 +9,10 @@ export interface DashboardModule {
 }
 
 const MODULES: Record<string, Omit<DashboardModule, 'id'>> = {
-  students: { label: 'Students', icon: 'school', color: '#00BCD4', route: '/students' },
-  teachers: { label: 'Teachers', icon: 'groups', color: '#E91E63', route: '/teachers' },
-  admin: { label: 'Admin', icon: 'admin-panel-settings', color: '#F44336', route: '/admins' },
-  staff: { label: 'Staff', icon: 'badge', color: '#2563EB', route: '/staff' },
+  students: { label: 'Students Attendance', icon: 'school', color: '#00BCD4', route: '/students' },
+  teachers: { label: 'Teachers Attendance', icon: 'groups', color: '#E91E63', route: '/teachers' },
+  admin: { label: 'Admin Attendance', icon: 'admin-panel-settings', color: '#F44336', route: '/admins' },
+  staff: { label: 'Staff Attendance', icon: 'badge', color: '#2563EB', route: '/staff' },
   adduser: { label: 'Add User', icon: 'person-add', color: '#4CAF50', route: '/adduser' },
   classes: { label: 'Classes', icon: 'menu-book', color: '#2196F3', route: '/classes' },
   subjects: { label: 'Subjects', icon: 'book', color: '#7C3AED', route: '/subjects' },

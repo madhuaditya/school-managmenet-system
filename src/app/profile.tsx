@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -259,15 +257,9 @@ export default function ProfileScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardContainer}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 84 : 0}>
       <ThemedView style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag">
+        contentContainerStyle={styles.content}>
         <View style={styles.avatarWrap}>
           {profileImage ? (
             <Image source={{ uri: profileImage }} style={styles.avatarImage} resizeMode="cover" />
@@ -354,7 +346,6 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </ScrollView>
     </ThemedView>
-    </KeyboardAvoidingView>
   );
 }
 

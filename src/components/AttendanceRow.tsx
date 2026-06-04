@@ -49,7 +49,7 @@ function renderStatusLabel(status: AttendanceStatus) {
 function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Props) {
 
     const router = useRouter();
-  console.log('Rendering row for', item, 'with status', item.currentStatus);
+  // console.log('Rendering row for', item, 'with status', item.currentStatus);
   const isSelected = item.currentStatus !== 'not-marked';
   const rowTint = item.currentStatus === 'present'
     ? styles.rowPresent
@@ -300,11 +300,13 @@ const styles = StyleSheet.create({
   },
   studentName: {
     fontSize: 15,
+    color: '#000',
   },
   studentMeta: {
     fontSize: 12,
     opacity: 0.72,
     marginTop: 1,
+    color: '#000',
   },
   statusPill: {
     paddingHorizontal: 12,
@@ -314,20 +316,21 @@ const styles = StyleSheet.create({
   statusPillText: {
     fontSize: 13,
     fontWeight: '800',
+    color: '#000',
   },
   badgePresent: { backgroundColor: 'rgba(34,197,94,0.14)' },
   badgeAbsent: { backgroundColor: 'rgba(239,68,68,0.14)' },
   badgeLeave: { backgroundColor: 'rgba(245,158,11,0.14)' },
   badgeNeutral: { backgroundColor: 'rgba(107,114,128,0.14)' },
   rowParentInfo: { marginTop: 6, gap: 1 },
-  parentText: { fontSize: 12, opacity: 0.78 },
+  parentText: { fontSize: 12, opacity: 0.78, color: '#000' },
   rowActions: { marginTop: 10, flexDirection: 'row', gap: 8 },
   rowActionsFull: { flexDirection: 'row', gap: 8 },
   actionChip: { flex: 1, borderRadius: 12, minHeight: 38, justifyContent: 'center', alignItems: 'center' },
   presentChip: { backgroundColor: '#16a34a' },
   absentChip: { backgroundColor: '#dc2626' },
   leaveChip: { backgroundColor: '#d97706' },
-  actionChipText: { color: '#fff', fontWeight: '800', fontSize: 12 },
+  actionChipText: { color: '#000', fontWeight: '800', fontSize: 12 },
   chipPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
   fullscreenHintCard: {
     borderRadius: 16,
@@ -345,6 +348,7 @@ const styles = StyleSheet.create({
   hintTitle: {
     fontSize: 12,
     fontWeight: '800',
+    color: '#000',
   },
   hintSideLabel: {
     fontSize: 10,
@@ -352,6 +356,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
+    color: '#000',
   },
   sliderTrackWrap: {
     flexDirection: 'row',
@@ -364,6 +369,7 @@ const styles = StyleSheet.create({
     opacity: 0.75,
     minWidth: 44,
     textAlign: 'center',
+    color: '#000',
   },
   sliderTrack: {
     flex: 1,
@@ -410,6 +416,7 @@ const styles = StyleSheet.create({
     opacity: 0.72,
     lineHeight: 16,
     textAlign: 'center',
+    color: '#000',
   },
   fullscreenFooter: {
     flexDirection: 'row',
@@ -424,7 +431,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(37,99,235,0.08)',
   },
   navGhostText: {
-    color: '#2563eb',
     fontWeight: '800',
+    color: '#000',
   },
 });

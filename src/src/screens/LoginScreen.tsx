@@ -8,7 +8,6 @@ import {
   Alert,
   ActivityIndicator,
   Keyboard,
-  KeyboardAvoidingView,
   KeyboardEvent,
   Platform,
   ScrollView,
@@ -233,20 +232,11 @@ const LoginScreen: React.FC = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.bg }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={0}>
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={[
-          styles.scrollContent,
-          keyboardInset > 0 ? styles.scrollContentWithKeyboard : null,
-          { paddingBottom: keyboardInset + 16 },
+          styles.scrollContent
         ]}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-        scrollIndicatorInsets={{ bottom: keyboardInset }}
         showsVerticalScrollIndicator={false}>
       <View style={[styles.content, { backgroundColor: colors.card }]}> 
         <Text style={[styles.title, { color: colors.primary }]}>School MIS</Text>
@@ -483,7 +473,6 @@ const LoginScreen: React.FC = () => {
         </View>
       </View>
       </ScrollView>
-    </KeyboardAvoidingView>
   );
 };
 

@@ -117,7 +117,7 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch {
           // Ignore logout API errors and clear local session anyway.
-          console.warn('Logout API call failed, clearing local session anyway.');
+          console.error('Logout API call failed, clearing local session anyway.');
         }
 
         set({

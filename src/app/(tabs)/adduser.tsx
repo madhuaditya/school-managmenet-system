@@ -4,7 +4,6 @@ import {
   Alert,
   FlatList,
   Keyboard,
-  KeyboardAvoidingView,
   KeyboardEvent,
   Platform,
   Modal,
@@ -445,18 +444,11 @@ export default function AddUserScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardContainer}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={0}>
       <ThemedView style={styles.container}>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: keyboardInset + 24 }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-        scrollIndicatorInsets={{ bottom: keyboardInset }}>
+        contentContainerStyle={[styles.scrollContent]}
+        showsVerticalScrollIndicator={false}>
         <View style={styles.typeSelector}>
           {(['admin', 'teacher', 'student', 'staff'] as UserType[]).map((type) => (
             <TouchableOpacity
@@ -719,7 +711,6 @@ export default function AddUserScreen() {
         </View>
       </Modal>
     </ThemedView>
-    </KeyboardAvoidingView>
   );
 }
 

@@ -94,7 +94,7 @@ export default function SchoolAdminSetupScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} >
         <Text style={styles.title}>Create School Admin</Text>
         <Text style={styles.subtitle}>{schoolName}</Text>
 

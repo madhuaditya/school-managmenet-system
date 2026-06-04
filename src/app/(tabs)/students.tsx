@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput,
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { apiService } from '@/api/client';
+import { getQueuedAttendanceSnapshot, submitAttendance } from '@/src/services/attendance';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
@@ -106,6 +107,7 @@ export default function StudentsTab() {
       if (!response.success) throw new Error(response.msg || 'Failed to load class details');
 
       const classData = response.data as ClassWithStudents;
+      const fallbackDate = new Date().toISOString().split('T')[0];
 
       try {
         const todayResp = await apiService.getTodayClassAttendance(classId);
@@ -167,12 +169,96 @@ export default function StudentsTab() {
             if (!statusMap[key]) statusMap[key] = { status: 'not-marked', date: todayData.date };
           });
 
+          const queuedSnapshot = await getQueuedAttendanceSnapshot(classId, todayData.date || fallbackDate);
+          if (queuedSnapshot?.records?.length) {
+            const queuedByUserId = queuedSnapshot.records.reduce<Record<string, any>>((acc, record) => {
+              acc[String(record.userId)] = record;
+              return acc;
+            }, {});
+
+            enrichedClassData.students = (enrichedClassData.students || []).map((student) => {
+              const key = String(getAttendanceUserId(student));
+              const queuedRecord = queuedByUserId[key];
+
+              if (!queuedRecord) {
+                return student;
+              }
+
+              baseMap[key] = queuedRecord.status;
+              statusMap[key] = { status: queuedRecord.status, date: queuedSnapshot.date || todayData.date || fallbackDate };
+
+              return {
+                ...student,
+                currentStatus: queuedRecord.status,
+              };
+            });
+
+            setClassAttendance({
+              date: queuedSnapshot.date || todayData.date || fallbackDate,
+              attendance: todayData.attendance || [],
+            });
+          }
+
           setBaseStatusByUser(baseMap);
           setDraftStatusByUser({ ...baseMap });
           setAttendanceStatus(statusMap);
         } else {
           setSelectedClassData(classData);
-          await hydrateTodayAttendanceStatus(classData.students || []);
+          const queuedSnapshot = await getQueuedAttendanceSnapshot(classId, fallbackDate);
+
+          if (queuedSnapshot?.records?.length) {
+            const queuedByUserId = queuedSnapshot.records.reduce<Record<string, any>>((acc, record) => {
+              acc[String(record.userId)] = record;
+              return acc;
+            }, {});
+
+            const queuedClassData: ClassWithStudents = {
+              ...classData,
+              students: (classData.students || []).map((student) => {
+                const key = String(getAttendanceUserId(student));
+                const queuedRecord = queuedByUserId[key];
+
+                if (!queuedRecord) {
+                  return student;
+                }
+
+                return {
+                  ...student,
+                  currentStatus: queuedRecord.status,
+                };
+              }),
+            };
+
+            const queueStatusMap: Record<string, { status: string; date: string }> = {};
+            (queuedClassData.students || []).forEach((student) => {
+              const key = String(getAttendanceUserId(student));
+              const queuedRecord = queuedByUserId[key];
+              queueStatusMap[key] = {
+                status: queuedRecord?.status || 'not-marked',
+                date: queuedSnapshot.date || fallbackDate,
+              };
+            });
+
+            setSelectedClassData(queuedClassData);
+            setClassAttendance({ date: queuedSnapshot.date || fallbackDate, attendance: [] });
+            setBaseStatusByUser(
+              (queuedClassData.students || []).reduce<Record<string, string>>((acc, student) => {
+                const key = String(getAttendanceUserId(student));
+                acc[key] = student.currentStatus || 'not-marked';
+                return acc;
+              }, {}),
+            );
+            setDraftStatusByUser(
+              (queuedClassData.students || []).reduce<Record<string, string>>((acc, student) => {
+                const key = String(getAttendanceUserId(student));
+                acc[key] = student.currentStatus || 'not-marked';
+                return acc;
+              }, {}),
+            );
+            setAttendanceStatus(queueStatusMap);
+          } else {
+            await hydrateTodayAttendanceStatus(classData.students || []);
+          }
         }
       } catch {
         setSelectedClassData(classData);
@@ -240,9 +326,9 @@ export default function StudentsTab() {
   const pendingCount = pendingChanges.length;
 
   const updateStatus = (row: any, status: 'present' | 'absent' | 'leave') => {
-    console.log('Updating status for', row, 'to', status);
+    // console.log('Updating status for', row, 'to', status);
     setDraftStatusByUser((prev) => ({ ...prev, [row._key]: status }));
-    console.log('Draft status by user after update:', { ...draftStatusByUser, [row._key]: status });
+    // console.log('Draft status by user after update:', { ...draftStatusByUser, [row._key]: status });
     setAttendanceStatus((prev) => ({
       ...prev,
       [row._key]: { status, date: classAttendance?.date || new Date().toISOString() },
@@ -256,8 +342,7 @@ export default function StudentsTab() {
       setSaving(true);
       setMessage(null);
       const records = pendingChanges.map((item) => ({ userId: item.userId || item._id, status: item.currentStatus, classId: selectedClassData._id }));
-      const response = await apiService.bulkMarkAttendance({ classId: selectedClassData._id, date: classAttendance?.date, records });
-      if (!response.success) throw new Error(response.msg || 'Failed to submit attendance');
+      await submitAttendance(records, selectedClassData._id, classAttendance?.date);
 
       const newBase = { ...baseStatusByUser };
       records.forEach((record: any) => {
@@ -265,7 +350,7 @@ export default function StudentsTab() {
       });
       setBaseStatusByUser(newBase);
       setDraftStatusByUser({ ...newBase });
-      setMessage('Attendance submitted successfully.');
+      setMessage('Attendance Saved');
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to submit attendance');
     } finally {
@@ -419,6 +504,7 @@ export default function StudentsTab() {
           submitting={saving}
           pendingCount={pendingCount}
         />
+        {message ? <ThemedText style={styles.successText}>{message}</ThemedText> : null}
       </ThemedView>
     );
   }

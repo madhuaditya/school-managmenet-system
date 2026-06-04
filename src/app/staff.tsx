@@ -120,10 +120,10 @@ export default function StaffScreen() {
       const attendanceResponse = await apiService.getTodayAttendanceByRole('staff');
       
       const attendanceList = attendanceResponse.data?.attendance || [];
-      console.log('Attendance response for staff:', attendanceList);
+      // console.log('Attendance response for staff:', attendanceList);
       const statusByUserId = new Map<string, AttendanceState>();
       attendanceList.forEach((entry) => {
-        console.log('Processing attendance entry:', entry);
+        // console.log('Processing attendance entry:', entry);
         const status = entry.status || 'not-marked';
         [entry.userId, entry._id].forEach((key) => {
           if (key) {
@@ -132,7 +132,7 @@ export default function StaffScreen() {
         });
       });
 
-      console.log('Mapped attendance status by user ID:', Array.from(statusByUserId.entries()));
+      // console.log('Mapped attendance status by user ID:', Array.from(statusByUserId.entries()));
 
       staffList.forEach((staffMember) => {
         const staffUserId = staffMember.user?._id || staffMember._id;

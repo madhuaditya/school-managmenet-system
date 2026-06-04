@@ -285,11 +285,13 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     textAlign: 'center',
+    color: '#000',
   },
   summaryText: {
     textAlign: 'center',
     opacity: 0.76,
     fontSize: 13,
+    color: '#000',
   },
   summaryGrid: {
     flexDirection: 'row',
@@ -303,18 +305,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    color: '#000',
   },
   presentStat: { backgroundColor: 'rgba(19, 236, 98, 0.1)' },
   absentStat: { backgroundColor: 'rgba(226, 14, 14, 0.1)' },
   leaveStat: { backgroundColor: 'rgba(217,119,6,0.10)' },
   neutralStat: { backgroundColor: 'rgba(100,116,139,0.10)' },
-  summaryStatValue: { fontSize: 24, fontWeight: '900' },
-  summaryStatLabel: { fontSize: 12, opacity: 0.72, fontWeight: '700', marginTop: 4 },
+  summaryStatValue: { fontSize: 24, fontWeight: '900' ,color: '#000' },
+  summaryStatLabel: { fontSize: 12, opacity: 0.72, fontWeight: '700', marginTop: 4 ,color: '#000' },
   submitButton: {
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
     backgroundColor: '#2563eb',
+    color: '#000',
   },
   submitButtonDisabled: {
     opacity: 0.45,
@@ -323,7 +327,7 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   submitButtonText: {
-    color: '#fff',
     fontWeight: '900',
+    color: '#000',
   },
 });

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Image, PanResponder, Pressable, StyleSheet, View } from 'react-native';
+import { Image, PanResponder, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 
 const AVATAR_FALLBACK = 'https://e7.pngegg.com/pngimages/84/165/png-clipart-united-states-avatar-organization-information-user-avatar-service-computer-wallpaper-thumbnail.png';
@@ -34,11 +34,11 @@ function getInitials(name: string) {
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('') || '?';
 }
 
-function renderStatusBadge(status: AttendanceStatus) {
+function renderStatusBadge(status: AttendanceStatus, isDark: boolean) {
   if (status === 'present') return styles.badgePresent;
   if (status === 'absent') return styles.badgeAbsent;
   if (status === 'leave') return styles.badgeLeave;
-  return styles.badgeNeutral;
+  return isDark ? styles.badgeNeutralDark : styles.badgeNeutral;
 }
 
 function renderStatusPillText(status: AttendanceStatus) {
@@ -54,6 +54,8 @@ function renderStatusLabel(status: AttendanceStatus) {
 }
 
 function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Props) {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const isSelected = item.currentStatus !== 'not-marked';
   const rowTint = item.currentStatus === 'present'
     ? styles.rowPresent
@@ -97,17 +99,29 @@ function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Pr
     });
   }, [item, onMoveNext, onUpdate, variant]);
 
+  const palette = useMemo(() => ({
+    card: isDark ? 'rgba(15, 23, 42, 0.96)' : 'rgba(239, 246, 255, 0.96)',
+    hintBg: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.05)',
+    ghostText: isDark ? '#93c5fd' : '#2563eb',
+    avatarBg: isDark ? '#334155' : '#e5e7eb',
+  }), [isDark]);
+
   if (variant === 'fullscreen') {
     return (
       <View
-        style={[styles.fullscreenCard, rowTint, isSelected ? styles.rosterRowSelected : null]}
+        style={[
+          styles.fullscreenCard,
+          { backgroundColor: palette.card },
+          rowTint,
+          isSelected ? styles.rosterRowSelected : null,
+        ]}
         {...(panResponder ? panResponder.panHandlers : {})}>
         <View style={styles.fullscreenHeader}>
           <View style={styles.avatarShell}>
             {item.image ? (
               <Image source={{ uri: item.image || AVATAR_FALLBACK }} style={styles.avatarLarge} />
             ) : (
-              <View style={[styles.avatarLarge, styles.avatarFallback]}>
+              <View style={[styles.avatarLarge, styles.avatarFallback, { backgroundColor: palette.avatarBg }]}>
                 <ThemedText style={styles.avatarFallbackText}>{getInitials(item.name)}</ThemedText>
               </View>
             )}
@@ -115,18 +129,18 @@ function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Pr
 
           <View style={styles.fullscreenMeta}>
             <ThemedText type="title" style={styles.studentName}>{item.name}</ThemedText>
-            <ThemedText style={styles.studentMeta}>Roll {item.rollNumber || 'N/A'} · {item.studentIdCode || 'No ID'}</ThemedText>
-            <ThemedText style={styles.studentMeta}>{item.email || 'N/A'}</ThemedText>
-            <ThemedText style={styles.studentMeta}>{item.fatherName ? `Father: ${item.fatherName}` : 'Father: N/A'}</ThemedText>
-            <ThemedText style={styles.studentMeta}>{item.motherName ? `Mother: ${item.motherName}` : 'Mother: N/A'}</ThemedText>
+            <ThemedText style={[styles.studentMeta, isDark && styles.studentMetaDark]}>Roll {item.rollNumber || 'N/A'} · {item.studentIdCode || 'No ID'}</ThemedText>
+            <ThemedText style={[styles.studentMeta, isDark && styles.studentMetaDark]}>{item.email || 'N/A'}</ThemedText>
+            <ThemedText style={[styles.studentMeta, isDark && styles.studentMetaDark]}>{item.fatherName ? `Father: ${item.fatherName}` : 'Father: N/A'}</ThemedText>
+            <ThemedText style={[styles.studentMeta, isDark && styles.studentMetaDark]}>{item.motherName ? `Mother: ${item.motherName}` : 'Mother: N/A'}</ThemedText>
           </View>
 
-          <View style={[styles.statusPill, renderStatusBadge(item.currentStatus)]}>
+          <View style={[styles.statusPill, renderStatusBadge(item.currentStatus, isDark)]}>
             <ThemedText style={[styles.statusPillText, renderStatusPillText(item.currentStatus)]}>{renderStatusLabel(item.currentStatus)}</ThemedText>
           </View>
         </View>
 
-        <View style={styles.fullscreenHintCard}>
+        <View style={[styles.fullscreenHintCard, { backgroundColor: palette.hintBg }]}>
           <ThemedText style={styles.hintTitle}>Swipe up or down to move</ThemedText>
           <ThemedText style={styles.hintText}>Swipe left to mark present and go next. Swipe right to mark absent and go next.</ThemedText>
         </View>
@@ -145,10 +159,10 @@ function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Pr
 
         <View style={styles.fullscreenFooter}>
           <Pressable onPress={onMovePrev} style={({ pressed }) => [styles.navGhostButton, pressed && styles.chipPressed]}>
-            <ThemedText style={styles.navGhostText}>Prev</ThemedText>
+            <ThemedText style={[styles.navGhostText, { color: palette.ghostText }]}>Prev</ThemedText>
           </Pressable>
           <Pressable onPress={onMoveNext} style={({ pressed }) => [styles.navGhostButton, pressed && styles.chipPressed]}>
-            <ThemedText style={styles.navGhostText}>Next</ThemedText>
+            <ThemedText style={[styles.navGhostText, { color: palette.ghostText }]}>Next</ThemedText>
           </Pressable>
         </View>
       </View>
@@ -156,28 +170,28 @@ function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Pr
   }
 
   return (
-    <View style={[styles.rosterRow, rowTint, isSelected ? styles.rosterRowSelected : null]}>
+    <View style={[styles.rosterRow, { backgroundColor: palette.card }, rowTint, isSelected ? styles.rosterRowSelected : null]}>
       <View style={styles.rowHeader}>
         {item.image ? (
           <Image source={{ uri: item.image || AVATAR_FALLBACK }} style={styles.avatar} />
         ) : (
-          <View style={[styles.avatar, styles.avatarFallback]}>
+          <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: palette.avatarBg }]}>
             <ThemedText style={styles.avatarFallbackText}>{getInitials(item.name)}</ThemedText>
           </View>
         )}
         <View style={styles.rowMeta}>
           <ThemedText type="defaultSemiBold" style={styles.studentName}>{item.name}</ThemedText>
-          <ThemedText style={styles.studentMeta}>Roll {item.rollNumber || 'N/A'} · {item.studentIdCode || 'No ID'}</ThemedText>
-          <ThemedText style={styles.studentMeta}>{item.email || 'N/A'}</ThemedText>
+          <ThemedText style={[styles.studentMeta, isDark && styles.studentMetaDark]}>Roll {item.rollNumber || 'N/A'} · {item.studentIdCode || 'No ID'}</ThemedText>
+          <ThemedText style={[styles.studentMeta, isDark && styles.studentMetaDark]}>{item.email || 'N/A'}</ThemedText>
         </View>
-        <View style={[styles.statusPill, renderStatusBadge(item.currentStatus)]}>
+        <View style={[styles.statusPill, renderStatusBadge(item.currentStatus, isDark)]}>
           <ThemedText style={[styles.statusPillText, renderStatusPillText(item.currentStatus)]}>{renderStatusLabel(item.currentStatus)}</ThemedText>
         </View>
       </View>
 
       <View style={styles.rowParentInfo}>
-        <ThemedText style={styles.parentText}>Father: {item.fatherName || 'N/A'}</ThemedText>
-        <ThemedText style={styles.parentText}>Mother: {item.motherName || 'N/A'}</ThemedText>
+        <ThemedText style={[styles.parentText, isDark && styles.parentTextDark]}>Father: {item.fatherName || 'N/A'}</ThemedText>
+        <ThemedText style={[styles.parentText, isDark && styles.parentTextDark]}>Mother: {item.motherName || 'N/A'}</ThemedText>
       </View>
 
       <View style={styles.rowActions}>
@@ -202,7 +216,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    backgroundColor: 'rgba(219, 234, 254, 0.95)',
   },
   fullscreenCard: {
     flex: 1,
@@ -210,14 +223,13 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     gap: 14,
-    backgroundColor: 'rgba(219, 234, 254, 0.95)',
   },
   rosterRowSelected: {
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   rowPresent: {
     borderColor: 'rgba(34, 197, 94, 0.28)',
@@ -233,7 +245,7 @@ const styles = StyleSheet.create({
   },
   rowNeutral: {
     borderColor: 'rgba(96, 165, 250, 0.28)',
-    backgroundColor: 'rgba(219, 234, 254, 0.96)'
+    backgroundColor: 'rgba(219, 234, 254, 0.96)',
   },
   rowHeader: {
     flexDirection: 'row',
@@ -280,11 +292,16 @@ const styles = StyleSheet.create({
   },
   studentName: {
     fontSize: 15,
+    color: '#000',
   },
   studentMeta: {
     fontSize: 12,
     opacity: 0.72,
     marginTop: 2,
+    color: '#000',
+  },
+  studentMetaDark: {
+    opacity: 0.95,
   },
   statusPill: {
     paddingHorizontal: 12,
@@ -294,39 +311,43 @@ const styles = StyleSheet.create({
   statusPillText: {
     fontSize: 13,
     fontWeight: '800',
+    color: '#000',
   },
-  statusPillTextPresent: { color: '#ffffff' },
-  statusPillTextAbsent: { color: '#ffffff' },
-  statusPillTextLeave: { color: '#ffffff' },
-  statusPillTextNeutral: { color: '#ffffff' },
+  statusPillTextPresent: { color: '#000' },
+  statusPillTextAbsent: { color: '#000' },
+  statusPillTextLeave: { color: '#000' },
+  statusPillTextNeutral: { color: '#000' },
   badgePresent: { backgroundColor: '#166534' },
   badgeAbsent: { backgroundColor: '#991b1b' },
   badgeLeave: { backgroundColor: '#92400e' },
   badgeNeutral: { backgroundColor: '#1e3a8a' },
+  badgeNeutralDark: { backgroundColor: '#334155' },
   rowParentInfo: { marginTop: 10, gap: 2 },
-  parentText: { fontSize: 12, opacity: 0.78 },
+  parentText: { fontSize: 12, opacity: 0.78, color: '#000' },
+  parentTextDark: { opacity: 0.95 },
   rowActions: { marginTop: 12, flexDirection: 'row', gap: 8 },
   rowActionsFull: { flexDirection: 'row', gap: 10 },
   actionChip: { flex: 1, borderRadius: 12, minHeight: 40, justifyContent: 'center', alignItems: 'center' },
   presentChip: { backgroundColor: '#16a34a' },
   absentChip: { backgroundColor: '#dc2626' },
   leaveChip: { backgroundColor: '#d97706' },
-  actionChipText: { color: '#fff', fontWeight: '800', fontSize: 12 },
+  actionChipText: { color: '#000', fontWeight: '800', fontSize: 12 },
   chipPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
   fullscreenHintCard: {
     borderRadius: 16,
     padding: 10,
-    backgroundColor: 'rgba(15,23,42,0.05)',
     gap: 3,
   },
   hintTitle: {
     fontSize: 12,
     fontWeight: '800',
+    color: '#000',
   },
   hintText: {
     fontSize: 11,
     opacity: 0.72,
     lineHeight: 16,
+    color: '#000',
   },
   fullscreenFooter: {
     flexDirection: 'row',
@@ -341,7 +362,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(37,99,235,0.08)',
   },
   navGhostText: {
-    color: '#2563eb',
     fontWeight: '800',
+    color: '#000',
   },
 });

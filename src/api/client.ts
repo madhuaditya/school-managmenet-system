@@ -460,6 +460,7 @@ class ApiService {
   async bulkMarkAttendance(payload: {
     classId?: string;
     date?: string;
+    requestId?: string;
     records: Array<{
       userId: string;
       status: 'present' | 'absent' | 'leave';

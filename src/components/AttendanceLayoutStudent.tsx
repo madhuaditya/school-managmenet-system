@@ -311,11 +311,13 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     textAlign: 'center',
+    color: '#000',
   },
   summaryText: {
     textAlign: 'center',
     opacity: 0.76,
     fontSize: 13,
+    color: '#000',
   },
   summaryGrid: {
     flexDirection: 'row',
@@ -329,6 +331,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    color: '#000',
   },
   presentStat: { backgroundColor: 'rgba(22,163,74,0.10)' },
   absentStat: { backgroundColor: 'rgba(220,38,38,0.10)' },

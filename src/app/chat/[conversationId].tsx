@@ -11,7 +11,6 @@ import {
   TextInput,
   View,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -335,10 +334,6 @@ export default function ConversationScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={insets.bottom}>
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -435,7 +430,6 @@ export default function ConversationScreen() {
             </ThemedText>
           </View>
         )}
-      </KeyboardAvoidingView>
     </ThemedView>
   );
 }

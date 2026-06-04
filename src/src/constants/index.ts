@@ -91,6 +91,7 @@ export const STORAGE_KEYS = {
   USER_PREFERENCES: 'user_preferences',
   LAST_LOGIN: 'last_login',
   ONBOARDING_SEEN: 'onboarding_seen',
+  PUSH_NOTIFICATION_PROMPT_PREFIX: 'push_notification_prompt',
 } as const;
 
 // Error Messages
