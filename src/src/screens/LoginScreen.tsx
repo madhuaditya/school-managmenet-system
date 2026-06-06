@@ -7,9 +7,6 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  Keyboard,
-  KeyboardEvent,
-  Platform,
   ScrollView,
   useColorScheme,
 } from 'react-native';
@@ -57,9 +54,6 @@ const LoginScreen: React.FC = () => {
   const [verifyingOtp, setVerifyingOtp] = React.useState(false);
   const [resendCount, setResendCount] = React.useState(0);
   const [cooldown, setCooldown] = React.useState(0);
-  const [keyboardInset, setKeyboardInset] = React.useState(0);
-  const scrollRef = React.useRef<ScrollView>(null);
-  const fieldYRef = React.useRef<Record<string, number>>({});
   const inputsRef = React.useRef<Array<RNTextInput | null>>([]);
 
   const scheme = useColorScheme();
@@ -113,21 +107,6 @@ const LoginScreen: React.FC = () => {
     try {
       setVerifyingOtp(true);
       const response = await login({token: otpToken, code: otp.trim()});
-      // const res = await apiService.verifyOtp(otpToken, otp.trim());
-      // if (!response.success || !response.data) throw new Error(response.msg || 'Failed to verify OTP');
-
-      // const data = response.data;
-      // const user = {
-      //   _id: data._id || '',
-      //   name: data.name,
-      //   email: data.email,
-      //   phone: data.phone,
-      //   role: data.role?.role || 'admin',
-      //   image: data.image || '',
-      //   school: data.school,
-      // } as any;
-
-      // setAuth({ user, accessToken: data.accessToken, refreshToken: data.refreshToken });
       router.replace('/(tabs)');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to verify OTP. Please try again.';
@@ -172,26 +151,6 @@ const LoginScreen: React.FC = () => {
     return () => clearInterval(id);
   }, [cooldown]);
 
-  React.useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const onShow = (event: KeyboardEvent) => {
-      setKeyboardInset(event.endCoordinates?.height || 0);
-    };
-
-    const onHide = () => {
-      setKeyboardInset(0);
-    };
-
-    const showSub = Keyboard.addListener(showEvent, onShow);
-    const hideSub = Keyboard.addListener(hideEvent, onHide);
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
 
   const onForgotPassword = async () => {
     if (!forgotUsername.trim() || !isValidEmail(forgotEmail)) {
@@ -219,25 +178,12 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  const trackFieldLayout = (key: string) => (event: any) => {
-    fieldYRef.current[key] = event.nativeEvent.layout.y;
-  };
-
-  const scrollToField = (key: string) => {
-    const y = fieldYRef.current[key];
-    if (typeof y !== 'number') return;
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ y: Math.max(0, y - 20), animated: true });
-    });
-  };
 
   return (
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={[
-          styles.scrollContent
-        ]}
-        showsVerticalScrollIndicator={false}>
+     <ScrollView
+  contentContainerStyle={styles.scrollContent}
+  showsVerticalScrollIndicator={false}
+>
       <View style={[styles.content, { backgroundColor: colors.card }]}> 
         <Text style={[styles.title, { color: colors.primary }]}>School MIS</Text>
         <Text style={[styles.subtitle, { color: colors.subText }]}>Management System</Text>
@@ -249,7 +195,7 @@ const LoginScreen: React.FC = () => {
         </View> */}
 
         <View style={styles.form}>
-          <View onLayout={trackFieldLayout('username')}>
+          <View>
           <Controller
             control={control}
             name="username"
@@ -271,7 +217,6 @@ const LoginScreen: React.FC = () => {
                 placeholderTextColor={colors.subText}
                 value={value}
                 onChangeText={onChange}
-                onFocus={() => scrollToField('username')}
                 onBlur={onBlur}
                 editable={!isLoading}
                 autoCapitalize="none"
@@ -281,7 +226,7 @@ const LoginScreen: React.FC = () => {
           </View>
           {errors.username && <Text style={[styles.errorText, { color: colors.error }]}>{errors.username.message}</Text>}
 
-          <View onLayout={trackFieldLayout('password')}>
+          <View >
           <Controller
             control={control}
             name="password"
@@ -303,7 +248,6 @@ const LoginScreen: React.FC = () => {
                 placeholderTextColor={colors.subText}
                 value={value}
                 onChangeText={onChange}
-                onFocus={() => scrollToField('password')}
                 onBlur={onBlur}
                 secureTextEntry
                 editable={!isLoading}
@@ -328,7 +272,7 @@ const LoginScreen: React.FC = () => {
           ) : (
             <View>
               <Text style={[styles.subtitle, { color: colors.subText, textAlign: 'center' }]}>{otpMessage}</Text>
-              <View style={styles.otpRow} onLayout={trackFieldLayout('otp')}>
+              <View style={styles.otpRow} >
                 {Array.from({ length: 6 }).map((_, idx) => {
                   const val = otp[idx] || '';
                   return (
@@ -340,7 +284,6 @@ const LoginScreen: React.FC = () => {
                       value={val}
                       keyboardType="number-pad"
                       maxLength={1}
-                      onFocus={() => scrollToField('otp')}
                       onChangeText={(text) => {
                         const digit = text.replace(/\D/g, '').slice(-1);
                         const arr = otp.split('');
@@ -403,7 +346,7 @@ const LoginScreen: React.FC = () => {
             </View>
           )}
 
-          <View style={styles.forgotWrap} onLayout={trackFieldLayout('forgot')}>
+          <View style={styles.forgotWrap} >
             <TextInput
               style={[
                 styles.input,
@@ -417,7 +360,6 @@ const LoginScreen: React.FC = () => {
               placeholderTextColor={colors.subText}
               value={forgotUsername}
               onChangeText={setForgotUsername}
-              onFocus={() => scrollToField('forgot')}
               autoCapitalize="none"
               editable={!sendingForgot && !isLoading}
             />
@@ -434,7 +376,6 @@ const LoginScreen: React.FC = () => {
               placeholderTextColor={colors.subText}
               value={forgotEmail}
               onChangeText={setForgotEmail}
-              onFocus={() => scrollToField('forgot')}
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!sendingForgot && !isLoading}
@@ -484,10 +425,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
-  },
-  scrollContentWithKeyboard: {
-    justifyContent: 'flex-start',
-    paddingTop: 20,
   },
   content: {
     borderRadius: 16,

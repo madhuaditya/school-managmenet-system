@@ -5,7 +5,6 @@ import { Animated, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, u
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DRAWER_FOOTER_ACTIONS, getDrawerQuickLinksForRole } from '@/src/constants/drawerMenu';
-import { exportLogsSnapshotToDownloads } from '@/src/services/logger';
 import { useAuthStore } from '@/src/store/auth.store';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
@@ -351,29 +350,6 @@ export default function TabLayout() {
               </View>
             </View>
             <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-              <Pressable
-                onPress={async () => {
-                  try {
-                    setExportingLogs(true);
-                    const dest = await exportLogsSnapshotToDownloads();
-                    if (dest) {
-                      // eslint-disable-next-line no-alert
-                      alert(`Logs exported to: ${dest}`);
-                    } else {
-                      alert('Export failed');
-                    }
-                  } catch (err) {
-                    // eslint-disable-next-line no-alert
-                    alert(String(err));
-                  } finally {
-                    setExportingLogs(false);
-                  }
-                }}
-                style={[styles.drawerClose, { marginRight: 8 }]}
-              >
-                <MaterialIcons name={exportingLogs ? 'autorenew' : 'file-download'} size={20} color={colors.text} />
-              </Pressable>
-
               <Pressable onPress={closeDrawer} style={styles.drawerClose}>
                 <MaterialIcons name="close" size={22} color={colors.text} />
               </Pressable>
@@ -439,7 +415,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    bottom: 12,
+    bottom: 1,
     shadowColor: '#000',
     shadowOpacity: 0.18,
     shadowRadius: 12,
@@ -524,7 +500,7 @@ const styles = StyleSheet.create({
   },
   drawerFooter: {
     padding: 16,
-    paddingBottom: 28,
+    paddingBottom: 10,
     borderTopWidth: 1,
     gap: 10,
   },

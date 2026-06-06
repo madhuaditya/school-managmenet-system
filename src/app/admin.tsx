@@ -366,7 +366,6 @@ export default function AdminScreen() {
             ) : null}
           </View>
         </View>
-        <ThemedText style={styles.count}>{adminCount} admins</ThemedText>
       </View>
 
       <AttendanceRoster

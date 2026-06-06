@@ -65,27 +65,16 @@ function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Pr
     return PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        const horizontal = Math.abs(gestureState.dx);
         const vertical = Math.abs(gestureState.dy);
-        return Math.max(horizontal, vertical) > 14;
+        const horizontal = Math.abs(gestureState.dx);
+        return vertical > 14 && vertical > horizontal;
       },
       onPanResponderRelease: (_, gestureState) => {
-        const horizontal = gestureState.dx;
         const vertical = gestureState.dy;
-
-        if (Math.abs(vertical) > Math.abs(horizontal)) {
-          if (vertical < -50) {
-            onMoveNext?.();
-          } else if (vertical > 50) {
-            onMovePrev?.();
-          }
-          return;
-        }
-
-        if (horizontal < -50) {
+        if (vertical < -50) {
           onUpdate(item, 'present');
           onMoveNext?.();
-        } else if (horizontal > 50) {
+        } else if (vertical > 50) {
           onUpdate(item, 'absent');
           onMoveNext?.();
         }
@@ -135,11 +124,11 @@ function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Pr
 
         <View style={styles.fullscreenHintCard}>
           <View style={styles.hintHeaderRow}>
-            <ThemedText style={styles.hintTitle}>Swipe to mark attendance</ThemedText>
-            <ThemedText style={styles.hintSideLabel}>Left / Right</ThemedText>
+            <ThemedText style={styles.hintTitle}>Swipe </ThemedText>
+            <ThemedText style={styles.hintSideLabel}>Up (Present) / Down (Absent)</ThemedText>
           </View>
 
-          <View style={styles.sliderTrackWrap}>
+          {/* <View style={styles.sliderTrackWrap}>
             <ThemedText style={styles.sliderHintText}>Present</ThemedText>
             <View style={styles.sliderTrack}>
               <View style={styles.sliderTrackFill} />
@@ -148,9 +137,9 @@ function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Pr
               </View>
             </View>
             <ThemedText style={styles.sliderHintText}>Absent</ThemedText>
-          </View>
+          </View> */}
 
-          <ThemedText style={styles.hintText}>Swipe left to mark present and go next. Swipe right to mark absent and go next.</ThemedText>
+          {/* <ThemedText style={styles.hintText}>Swipe up to mark present and go next. Swipe down to mark absent and go next.</ThemedText> */}
         </View>
 
         <View style={styles.rowActionsFull}>
@@ -223,11 +212,11 @@ const styles = StyleSheet.create({
   fullscreenCard: {
     flex: 1,
     borderRadius: 24,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderWidth: 1,
     backgroundColor: 'rgba(219, 234, 254, 0.95)',
-    gap: 30,
+    gap: 16,
     // justifyContent: 'space-between',
   },
   rosterRowSelected: {
@@ -259,9 +248,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   fullscreenHeader: {
-    gap: 6,
+    gap: 4,
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 2,
   },
   avatar: {
     width: 54,
@@ -274,9 +263,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarLarge: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#e5e7eb',
   },
   avatarFallback: {
@@ -334,11 +323,11 @@ const styles = StyleSheet.create({
   chipPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
   fullscreenHintCard: {
     borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     backgroundColor: 'rgba(15,23,42,0.05)',
-    gap: 8,
-    marginTop: 2,
+    gap: 6,
+    marginTop: 0,
   },
   hintHeaderRow: {
     flexDirection: 'row',
@@ -421,12 +410,12 @@ const styles = StyleSheet.create({
   fullscreenFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 6,
   },
   navGhostButton: {
     flex: 1,
     borderRadius: 14,
-    paddingVertical: 8,
+    paddingVertical: 6,
     alignItems: 'center',
     backgroundColor: 'rgba(37,99,235,0.08)',
   },

@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL =  'https://school-project-backend-lwzb.onrender.com/api' // process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.105:5000/api';
+export const API_BASE_URL = 'https://school-project-backend-lwzb.onrender.com/api' //process.env.EXPO_PUBLIC_API_URL || 
 export const SOCKET_BASE_URL = process.env.EXPO_PUBLIC_SOCKET_URL || API_BASE_URL.replace(/\/api\/?$/, '');
 export const API_TIMEOUT = 30000;
 

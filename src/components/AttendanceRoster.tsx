@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, View, StyleSheet, Dimensions, Pressable } from 'react-native';
 import AttendanceRow from '@/components/AttendanceRow';
 import { ThemedText } from '@/components/themed-text';
@@ -88,19 +88,19 @@ function SummaryStat({ label, value, tone }: { label: string; value: number; ton
 
 export default function AttendanceRoster({role='Student', roster, updateStatus, mode = 'list', onSubmitBulk, submitting }: Props) {
   const listRef = useRef<FlatList<CardItem | any>>(null);
-  const { height: screenHeight } = Dimensions.get('window');
-  const cardHeight = Math.max(560, screenHeight - 18);
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  const cardHeight = Math.max(360, Math.min(screenHeight - 140, 500));
+  const horizontalMargin = 12;
+  const cardWidth = Math.max(360, Math.min(screenWidth - 32, 980));
+  const itemWidth = cardWidth + horizontalMargin * 2;
   const counts = useMemo(() => getStatusCounts(roster), [roster]);
   const pendingCount = counts.notMarked;
 
   const keyExtractor = useCallback((item: any) => item._key, []);
-  const scrollToIndex = useCallback((index: number) => {
-    if (!listRef.current) return;
-    const safeIndex = Math.max(0, index);
-    requestAnimationFrame(() => {
-      listRef.current?.scrollToIndex({ index: safeIndex, animated: true });
-    });
-  }, []);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const lastSideTapRef = useRef<{ time: number; dir: 'left' | 'right' | null }>({ time: 0, dir: null });
+
+  
 
   const cardData = useMemo<CardItem[]>(() => {
     if (mode !== 'card') return [];
@@ -110,6 +110,22 @@ export default function AttendanceRoster({role='Student', roster, updateStatus, 
       { _key: 'summary-end', type: 'summary-end' },
     ];
   }, [mode, roster]);
+
+  const scrollToIndex = useCallback((index: number) => {
+    if (!listRef.current) return;
+    const currentData = mode === 'card' ? cardData : roster;
+    if (!currentData || currentData.length === 0) return;
+    const maxIndex = Math.max(0, currentData.length - 1);
+    const safeIndex = Math.min(Math.max(0, index), maxIndex);
+    requestAnimationFrame(() => {
+      try {
+        listRef.current?.scrollToIndex({ index: safeIndex, animated: true });
+      } catch (err) {
+        const offset = safeIndex * cardHeight;
+        listRef.current?.scrollToOffset({ offset, animated: true });
+      }
+    });
+  }, [cardData, cardHeight, mode, roster]);
 
   const scrollToPosition = useCallback((position: 'top' | 'bottom') => {
     const currentData = mode === 'card' ? cardData : roster;
@@ -138,7 +154,7 @@ export default function AttendanceRoster({role='Student', roster, updateStatus, 
   const renderCardItem = useCallback(({ item, index }: { item: CardItem; index: number }) => {
     if (item.type === 'summary-start' || item.type === 'summary-end') {
       return (
-        <View style={[styles.cardPage, { height: cardHeight }]}>
+        <View style={[styles.cardPage, { height: cardHeight, width: cardWidth, marginHorizontal: horizontalMargin }]}>
           <SummaryCard
           role={role}
             title={item.type === 'summary-start' ? 'Attendance summary' : 'Review and submit'}
@@ -155,7 +171,7 @@ export default function AttendanceRoster({role='Student', roster, updateStatus, 
     const studentItem = item as any;
 
     return (
-      <View style={[styles.cardPage,  { height: cardHeight }]} pointerEvents={submitting ? 'none' : 'auto'}>
+      <View style={[styles.cardPage,  { height: cardHeight, width: cardWidth, marginHorizontal: horizontalMargin }]} pointerEvents={submitting ? 'none' : 'auto'}>
         <AttendanceRow
           item={studentItem}
           variant="fullscreen"
@@ -171,43 +187,74 @@ export default function AttendanceRoster({role='Student', roster, updateStatus, 
 
   return (
     <View style={styles.container}>
-   {mode=== 'card' && (
-            <View pointerEvents="box-none" style={styles.quickNavWrap}>
-           <Pressable
-             onPress={() => scrollToPosition('top')}
-             style={({ pressed }) => [styles.quickNavButton, pressed && styles.quickNavPressed]}>
-             <ThemedText style={styles.quickNavText}>↑</ThemedText>
-             <ThemedText style={styles.quickNavLabel}>Top</ThemedText>
-           </Pressable>
-           <Pressable
-             onPress={() => scrollToPosition('bottom')}
-             style={({ pressed }) => [styles.quickNavButton, pressed && styles.quickNavPressed]}>
-             <ThemedText style={styles.quickNavText}>↓</ThemedText>
-             <ThemedText style={styles.quickNavLabel}>Bottom</ThemedText>
-           </Pressable>
-         </View>
-         )}
+   {mode === 'card' && (
+        <>
+          <Pressable
+            onPress={() => {
+              const now = Date.now();
+              const last = lastSideTapRef.current;
+              if (last.dir === 'left' && now - last.time < 350) {
+                scrollToIndex(0);
+                lastSideTapRef.current = { time: 0, dir: null };
+                return;
+              }
+              lastSideTapRef.current = { time: now, dir: 'left' };
+              scrollToIndex(currentIndex - 1);
+            }}
+            style={({ pressed }) => [styles.quickNavSideButton, pressed && styles.quickNavPressed, styles.quickNavLeft]}
+          >
+            <ThemedText style={styles.quickNavText}>‹</ThemedText>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              const now = Date.now();
+              const last = lastSideTapRef.current;
+              if (last.dir === 'right' && now - last.time < 350) {
+                const currentData = mode === 'card' ? cardData : roster;
+                const target = currentData.length - 1;
+                scrollToIndex(target);
+                lastSideTapRef.current = { time: 0, dir: null };
+                return;
+              }
+              lastSideTapRef.current = { time: now, dir: 'right' };
+              scrollToIndex(currentIndex + 1);
+            }}
+            style={({ pressed }) => [styles.quickNavSideButton, pressed && styles.quickNavPressed, styles.quickNavRight]}
+          >
+            <ThemedText style={styles.quickNavText}>›</ThemedText>
+          </Pressable>
+        </>
+      )}
       {mode === 'card' ? (
         <FlatList
           ref={listRef}
+          horizontal
           data={cardData}
           keyExtractor={(item) => item._key}
           renderItem={renderCardItem as any}
+          onViewableItemsChanged={useRef(({ viewableItems }: { viewableItems: any[] }) => {
+            if (!viewableItems || viewableItems.length === 0) return;
+            const first = viewableItems[0];
+            const idx = typeof first.index === 'number' ? first.index : 0;
+            setCurrentIndex(idx);
+          }).current}
+          viewabilityConfig={useRef({ itemVisiblePercentThreshold: 50 }).current}
           pagingEnabled
           decelerationRate="fast"
-          snapToInterval={cardHeight}
-          snapToAlignment="start"
+          snapToInterval={itemWidth}
+          snapToAlignment="center"
           disableIntervalMomentum
-          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
           bounces={false}
-          getItemLayout={(_, index) => ({ length: cardHeight, offset: cardHeight * index, index })}
+          contentContainerStyle={{ paddingHorizontal: horizontalMargin }}
+          getItemLayout={(_, index) => ({ length: itemWidth, offset: itemWidth * index, index })}
           initialNumToRender={2}
           windowSize={5}
           removeClippedSubviews
           maxToRenderPerBatch={4}
           updateCellsBatchingPeriod={50}
           onScrollToIndexFailed={(info) => {
-            const offset = info.averageItemLength * info.index;
+            const offset = (info.averageItemLength || itemWidth) * info.index;
             listRef.current?.scrollToOffset({ offset, animated: true });
           }}
         />
@@ -330,4 +377,25 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#000',
   },
+  quickNavSideButton: {
+    position: 'absolute',
+    top: '50%',
+    transform: [{ translateY: -22 }],
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    elevation: 12,
+    zIndex: 999,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  quickNavLeft: { left: 8 },
+  quickNavRight: { right: 8 },
 });

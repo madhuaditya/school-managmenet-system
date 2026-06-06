@@ -10,7 +10,6 @@ import {
   StyleSheet,
   TextInput,
   View,
-  Keyboard,
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,7 +54,6 @@ export default function ConversationScreen() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const insets = useSafeAreaInsets();
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const conversation = useMemo(
     () => conversations.find((entry) => entry._id === conversationId),
@@ -115,29 +113,6 @@ export default function ConversationScreen() {
     }
   }, [conversationId, markConversationRead, messages, user?._id]);
 
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const onShow = (e: any) => {
-      const height = e?.endCoordinates?.height || 0;
-      setKeyboardHeight(height);
-      // ensure we scroll to the latest message when keyboard opens
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
-    };
-
-    const onHide = () => {
-      setKeyboardHeight(0);
-    };
-
-    const showSub = Keyboard.addListener(showEvent, onShow);
-    const hideSub = Keyboard.addListener(hideEvent, onHide);
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
 
   const appendMarkdownToken = (token: string) => {
     setDraft((prev) => `${prev}${prev ? ' ' : ''}${token}`);
@@ -340,8 +315,7 @@ export default function ConversationScreen() {
           renderItem={renderMessage}
           keyExtractor={(item) => item._id}
           contentContainerStyle={[
-            styles.messageList,
-            { paddingBottom: keyboardHeight + insets.bottom },
+            styles.messageList
           ]}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           ListHeaderComponent={
@@ -396,7 +370,6 @@ export default function ConversationScreen() {
                 position: 'absolute',
                 left: 0,
                 right: 0,
-                bottom: Math.max(0, keyboardHeight - insets.bottom),
                 zIndex: 20,
                 elevation: 20,
                 margin: 0,

@@ -29,7 +29,7 @@ export const DRAWER_PUBLIC_LINKS: Array<DashboardModule & { route: string }> = [
   {
     id: 'logs',
     label: 'App Logs',
-    icon: 'file-text-outline',
+    icon: 'file-download',
     color: '#64748B',
     route: '/logs',
   },

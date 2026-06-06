@@ -3,7 +3,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert,  Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -236,7 +236,6 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['bottom', 'left', 'right']}>
           <ThemeProvider value={customTheme}>
             <Stack
@@ -325,7 +324,6 @@ export default function RootLayout() {
             </Modal>
           </ThemeProvider>
         </SafeAreaView>
-      </KeyboardAvoidingView>
     </SafeAreaProvider>
   );
 }

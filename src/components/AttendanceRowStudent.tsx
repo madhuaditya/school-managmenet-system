@@ -71,27 +71,16 @@ function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Pr
     return PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        const horizontal = Math.abs(gestureState.dx);
         const vertical = Math.abs(gestureState.dy);
-        return Math.max(horizontal, vertical) > 14;
+        const horizontal = Math.abs(gestureState.dx);
+        return vertical > 14 && vertical > horizontal;
       },
       onPanResponderRelease: (_, gestureState) => {
-        const horizontal = gestureState.dx;
         const vertical = gestureState.dy;
-
-        if (Math.abs(vertical) > Math.abs(horizontal)) {
-          if (vertical < -50) {
-            onMoveNext?.();
-          } else if (vertical > 50) {
-            onMovePrev?.();
-          }
-          return;
-        }
-
-        if (horizontal < -50) {
+        if (vertical < -50) {
           onUpdate(item, 'present');
           onMoveNext?.();
-        } else if (horizontal > 50) {
+        } else if (vertical > 50) {
           onUpdate(item, 'absent');
           onMoveNext?.();
         }
@@ -141,8 +130,7 @@ function Row({ item, onUpdate, variant = 'compact', onMoveNext, onMovePrev }: Pr
         </View>
 
         <View style={[styles.fullscreenHintCard, { backgroundColor: palette.hintBg }]}>
-          <ThemedText style={styles.hintTitle}>Swipe up or down to move</ThemedText>
-          <ThemedText style={styles.hintText}>Swipe left to mark present and go next. Swipe right to mark absent and go next.</ThemedText>
+          <ThemedText style={styles.hintText}>Swipe up to mark present and go next. Swipe down to mark absent and go next.</ThemedText>
         </View>
 
         <View style={styles.rowActionsFull}>

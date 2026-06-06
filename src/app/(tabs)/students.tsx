@@ -620,7 +620,7 @@ export default function StudentsTab() {
         </View>
       ) : null}
 
-      {message ? <ThemedText style={styles.successText}>{message}</ThemedText> : null}
+      {/* {message ? <ThemedText style={styles.successText}>{message}</ThemedText> : null} */}
     </ThemedView>
   );
 }

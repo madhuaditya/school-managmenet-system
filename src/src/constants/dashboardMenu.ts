@@ -75,7 +75,7 @@ const ROLE_MENU_ORDER: Record<UserRole, string[]> = {
      'performance', 'my-alerts', 'profile'],
   staff: ['attendance', 
     // 'chat', 
-    'leave-apply', 'my-leaves', 'my-salary', 'my-alerts', 'profile'],
+    'leave-apply',  'my-salary', 'my-leaves', 'my-alerts', 'profile'], //
 };
 
 export const getDashboardModulesForRole = (role: UserRole | null | undefined, userId?: string): DashboardModule[] => {

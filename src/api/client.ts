@@ -40,6 +40,21 @@ import {
 // import { useAuthStore } from '@/src/store/auth.store';
 import { forceLogoutAndRedirect } from '../src/services/sessionManager';
 type RefreshResponse = ApiResponse<{ accessToken: string }>;
+type SalaryHistoryPagination = {
+  page: number;
+  limit: number;
+  totalRecords: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
+type SalaryHistoryResponse = ApiResponse<{
+  staffId: string;
+  totalPayments: number;
+  records: SalaryPayment[];
+  pagination: SalaryHistoryPagination;
+}>;
 
 class ApiService {
   private client: AxiosInstance;
@@ -835,9 +850,9 @@ class ApiService {
     staffId: string;
     page?: number;
     limit?: number;
-  }): Promise<ApiResponse<{ records: SalaryPayment[]; pagination: Record<string, unknown> }>> {
+  }): Promise<SalaryHistoryResponse> {
     const { staffId, ...rest } = params;
-    return this.get(`/salary-management/payment/staff/${staffId}/history`, rest);
+    return this.get(`/salary-management/summary/staff/${staffId}/history`, rest);
   }
 
   // Fee structure APIs

@@ -376,7 +376,6 @@ export default function TeachersScreen() {
             ) : null}
           </View>
         </View>
-        <ThemedText style={styles.count}>{teacherCount} teachers</ThemedText>
       </View>
 
       <AttendanceRoster

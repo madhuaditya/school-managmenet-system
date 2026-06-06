@@ -364,7 +364,6 @@ export default function StaffScreen() {
             ) : null}
           </View>
         </View>
-        <ThemedText style={styles.count}>{staffCount} staff</ThemedText>
       </View>
 
       <AttendanceRoster

@@ -33,6 +33,15 @@ export default function ProfileScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const isDark = colorScheme === 'dark';
+  const cardBg = isDark ? '#111827' : '#FFFFFF';
+  const surfaceBg = isDark ? '#0B1220' : '#F9FAFB';
+  const textColor = isDark ? '#F9FAFB' : '#111827';
+  const mutedColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#334155' : '#D1D5DB';
+  const primaryButtonBg = isDark ? '#2563EB' : theme.tint;
+  const secondaryButtonBg = isDark ? 'rgba(37, 99, 235, 0.14)' : 'transparent';
+  const logoutButtonBg = isDark ? 'rgba(217, 48, 37, 0.14)' : 'transparent';
 
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -270,7 +279,7 @@ export default function ProfileScreen() {
           )}
 
           <TouchableOpacity
-            style={[styles.changePhotoBtn, { borderColor: theme.tint }]}
+            style={[styles.changePhotoBtn, { borderColor: theme.tint, backgroundColor: isDark ? 'rgba(37, 99, 235, 0.14)' : 'transparent' }]}
             disabled={uploadingImage}
             onPress={handleSelectProfileImage}>
             {uploadingImage ? (
@@ -286,9 +295,9 @@ export default function ProfileScreen() {
           <TextInput
             value={form.name}
             onChangeText={(v) => updateField('name', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
+            style={[styles.input, { borderColor, backgroundColor: surfaceBg, color: textColor }]}
             placeholder="Enter name"
-            placeholderTextColor={theme.tabIconDefault}
+            placeholderTextColor={mutedColor}
           />
         </View>
 
@@ -297,10 +306,10 @@ export default function ProfileScreen() {
           <TextInput
             value={form.phone}
             onChangeText={(v) => updateField('phone', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
+            style={[styles.input, { borderColor, backgroundColor: surfaceBg, color: textColor }]}
             placeholder="Enter phone"
             keyboardType="phone-pad"
-            placeholderTextColor={theme.tabIconDefault}
+            placeholderTextColor={mutedColor}
           />
         </View>
 
@@ -319,7 +328,7 @@ export default function ProfileScreen() {
         </ThemedView>
 
         <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: saving ? theme.tabIconDefault : theme.tint }]}
+          style={[styles.actionBtn, { backgroundColor: saving ? (isDark ? '#475569' : theme.tabIconDefault) : primaryButtonBg }]}
           disabled={saving}
           onPress={handleUpdate}>
           {saving ? (
@@ -330,7 +339,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.secondaryBtn, { borderColor: theme.tint }]}
+          style={[styles.secondaryBtn, { borderColor: theme.tint, backgroundColor: secondaryButtonBg }]}
           onPress={() => {
             if (user?._id) {
               router.push({ pathname: '/attdence-detail/[id]', params: { id: user._id } });
@@ -340,7 +349,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.logoutBtn, { borderColor: '#d93025' }]}
+          style={[styles.logoutBtn, { borderColor: '#d93025', backgroundColor: logoutButtonBg }]}
           onPress={handleLogout}>
           <ThemedText style={styles.logoutText}>Logout</ThemedText>
         </TouchableOpacity>

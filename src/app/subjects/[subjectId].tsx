@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Picker } from '@react-native-picker/picker';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { apiService } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
@@ -15,6 +16,26 @@ function getCurrentAcademicYear() {
   const date = `${start}-${String(start + 1).slice(-2)}`;
   return date;
 }
+
+const assessmentTypeOptions = [
+  { label: 'Exam', value: 'exam' },
+  { label: 'Test', value: 'test' },
+  { label: 'Assignment', value: 'assignment' },
+] as const;
+
+const fixedMaxMarksByType = {
+  test: 10,
+  assignment: 20,
+} as const;
+
+const StudentRow = React.memo(function StudentRow({ item }: { item: any }) {
+  return (
+    <View style={styles.rowItem}>
+      <ThemedText>{item.user?.name || item.name || 'Student'}</ThemedText>
+      <ThemedText style={{ opacity: 0.7 }}>{item.rollNumber ? `#${item.rollNumber}` : ''}</ThemedText>
+    </View>
+  );
+});
 
 export default function SubjectDetail() {
   const params = useLocalSearchParams();
@@ -45,6 +66,79 @@ export default function SubjectDetail() {
   const [rows, setRows] = useState<any[]>([]);
   const [selectedExam, setSelectedExam] = useState<any | null>(null);
 
+  const selectedExamValue = selectedExam?._id || '';
+
+  const selectedMaxMarks = useMemo(() => {
+    if (type === 'test') return fixedMaxMarksByType.test;
+    if (type === 'assignment') return fixedMaxMarksByType.assignment;
+    return Number(selectedExam?.totalMarks || subject?.maxMarks || 100);
+  }, [selectedExam?.totalMarks, subject?.maxMarks, type]);
+
+  const renderStudentItem = useCallback(({ item }: { item: any }) => <StudentRow item={item} />, []);
+
+  const studentKeyExtractor = useCallback(
+    (item: any) => String(item._id || item.user?._id || item.userId || item.studentId || item.rollNumber || item.name),
+    [],
+  );
+
+  const buildManualRows = useCallback(
+    (assessmentType: 'test' | 'assignment') => {
+      const totalMarks = assessmentType === 'test' ? fixedMaxMarksByType.test : fixedMaxMarksByType.assignment;
+      const matchedProgress = progress.filter((item: any) => item.type === assessmentType);
+      const progressByStudentId = new Map<string, any>();
+
+      matchedProgress.forEach((item: any) => {
+        const key = String(item.student?._id || item.studentId || item.student || '');
+        if (key && !progressByStudentId.has(key)) {
+          progressByStudentId.set(key, item);
+        }
+      });
+
+      const label = assessmentType === 'test' ? 'Test' : 'Assignment';
+      return students.map((student: any) => {
+        const studentId = student._id || student.user?._id || student.userId;
+        const item = progressByStudentId.get(String(studentId));
+        return {
+          studentId,
+          name: student.user?.name || student.name || 'Student',
+          marksObtained: item?.marksObtained ?? '',
+          totalMarks,
+          remarks: item?.remarks ?? '',
+          progressId: item?._id || null,
+          title: item?.title || label,
+        };
+      });
+    },
+    [progress, students],
+  );
+
+  const resetForManualAssessment = useCallback(
+    (assessmentType: 'test' | 'assignment') => {
+      setSelectedExam(null);
+      setType(assessmentType);
+      setTitle(assessmentType === 'test' ? 'Test' : 'Assignment');
+      setRows(buildManualRows(assessmentType));
+      setEditing(true);
+    },
+    [buildManualRows],
+  );
+
+  const handleAssessmentTypeChange = useCallback(
+    (nextType: 'exam' | 'test' | 'assignment') => {
+      setType(nextType);
+      if (nextType === 'exam') {
+        setSelectedExam(null);
+        setRows([]);
+        setTitle('');
+        setEditing(false);
+        return;
+      }
+
+      resetForManualAssessment(nextType);
+    },
+    [resetForManualAssessment],
+  );
+
   useEffect(() => {
     void loadDetails();
   }, [subjectId, academicYear]);
@@ -64,6 +158,8 @@ export default function SubjectDetail() {
         setSelectedExam(null);
         setEditing(false);
         setRows([]);
+        setType('exam');
+        setTitle('');
       }
     } catch (err) {
       // silent
@@ -76,44 +172,6 @@ export default function SubjectDetail() {
     if (!exam || !exam._id) return;
     setLoadingTemplate(true);
     try {
-      const defaultTotal = exam.totalMarks || subject?.maxMarks || 100;
-      const matchedProgress = progress.filter((item: any) => {
-        const examId = item.exam?._id || item.exam;
-        const itemTitle = String(item.title || '').trim().toLowerCase();
-        const examTitle = String(exam.name || exam.title || '').trim().toLowerCase();
-        return String(examId) === String(exam._id) || (item.type === 'exam' && itemTitle === examTitle);
-      });
-
-      const progressByStudentId = new Map<string, any>();
-      matchedProgress.forEach((item: any) => {
-        const key = String(item.student?._id || item.studentId || item.student || '');
-        if (key && !progressByStudentId.has(key)) {
-          progressByStudentId.set(key, item);
-        }
-      });
-
-      const fromSubjectCall = students.map((student: any) => {
-        const studentId = student._id || student.user?._id || student.userId;
-        const item = progressByStudentId.get(String(studentId));
-        return {
-          studentId,
-          name: student.user?.name || student.name || 'Student',
-          marksObtained: item?.marksObtained ?? 0,
-          totalMarks: item?.totalMarks ?? defaultTotal,
-          remarks: item?.remarks ?? '',
-          progressId: item?._id || null,
-        };
-      });
-
-      if (fromSubjectCall.length) {
-        setRows(fromSubjectCall);
-        setEditing(true);
-        setSelectedExam(exam);
-        setTitle((exam.name || exam.title || '').toString());
-        setType('exam');
-        return;
-      }
-
       const res = await apiService.getExamProgressTemplate(exam._id, academicYear as any);
       if (res && res.success && res.data) {
         const templateRows = Array.isArray(res.data.rows) ? res.data.rows : [];
@@ -121,12 +179,15 @@ export default function SubjectDetail() {
           studentId: row.student?._id || row.studentId || row.student,
           name: row.student?.user?.name || row.student?.name || row.studentName || 'Student',
           marksObtained: row.marksObtained ?? 0,
-          totalMarks: row.totalMarks ?? defaultTotal,
+          totalMarks: row.totalMarks ?? Number(res.data.exam?.totalMarks || exam.totalMarks || subject?.maxMarks || 100),
           remarks: row.remarks ?? '',
           progressId: row.progressId || row._id || null,
         }));
         if (!mapped.length) {
           Alert.alert('Template', 'No student rows returned for this exam');
+          setRows([]);
+          setEditing(false);
+          setSelectedExam(null);
           return;
         }
         setRows(mapped);
@@ -136,6 +197,9 @@ export default function SubjectDetail() {
         setType('exam');
       } else {
         Alert.alert('Template', 'No template found for selected exam');
+        setRows([]);
+        setEditing(false);
+        setSelectedExam(null);
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to load template');
@@ -144,31 +208,25 @@ export default function SubjectDetail() {
     }
   }
 
-  function startBulkEdit(exam?: any) {
-    if (exam) {
-      void loadExamTemplate(exam);
-      return;
-    }
-    // if exams exist, require selection
-    if (exams.length && !selectedExam) {
-      Alert.alert('Select exam', 'Please load/select an exam template first.');
-      return;
-    }
-    const defaultTotal = subject?.maxMarks ?? 100;
-    const initial = students.map((s) => ({ studentId: s._id || s.user?._id || s.userId, name: s.user?.name || s.name || 'Student', marksObtained: 0, totalMarks: defaultTotal, remarks: '', progressId: null }));
-    setRows(initial);
-    setEditing(true);
-  }
-
   async function saveBulk() {
+    if (!rows.length) {
+      Alert.alert('Validation', 'Please load or create rows before saving marks.');
+      return;
+    }
+
+    if (type === 'exam' && !selectedExam) {
+      Alert.alert('Validation', 'Please select a valid exam template before saving marks.');
+      return;
+    }
+
     setSaving(true);
     try {
       const payload: any = {
         subjectId,
         academicYear,
-        type: selectedExam ? 'exam' : type,
-        title: selectedExam ? (title || selectedExam.name || selectedExam.title) : title,
-        examId: selectedExam?._id,
+        type,
+        title: type === 'exam' ? (title || selectedExam?.name || selectedExam?.title) : title,
+        examId: type === 'exam' ? selectedExam?._id : undefined,
         classId: subject?.class?._id,
         rows: rows.map((r) => ({
           studentId: r.studentId,
@@ -205,8 +263,8 @@ export default function SubjectDetail() {
         <ThemedText type="title">{subject?.name || 'Subject'}</ThemedText>
         <ThemedText style={{ marginTop: 4, opacity: 0.75 }}>{subject?.code || 'No code'}</ThemedText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
-          <View style={styles.statChip}><ThemedText>Subject ID: {subject?._id || subjectId}</ThemedText></View>
-          <View style={styles.statChip}><ThemedText>Route ID: {subjectId}</ThemedText></View>
+          {/* <View style={styles.statChip}><ThemedText>Subject ID: {subject?._id || subjectId}</ThemedText></View>
+          <View style={styles.statChip}><ThemedText>Route ID: {subjectId}</ThemedText></View> */}
           <View style={styles.statChip}><ThemedText>Class: {subject?.class ? `${subject.class.name}${subject.class.section ? `-${subject.class.section}` : ''}` : 'N/A'}</ThemedText></View>
           <View style={styles.statChip}><ThemedText>Teacher: {subject?.teacher?.user?.name || 'N/A'}</ThemedText></View>
         </View>
@@ -223,40 +281,58 @@ export default function SubjectDetail() {
 
       <View style={{ marginTop: 12 }}>
         <ThemedText type="subtitle">Academic Year</ThemedText>
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-          {yearOptions.map((y) => (
-            <Pressable key={y} onPress={() => setAcademicYear(y)} style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, backgroundColor: academicYear === y ? '#2563EB' : 'transparent' }}>
-              <ThemedText style={{ color: academicYear === y ? '#fff' : undefined }}>{y}</ThemedText>
-            </Pressable>
-          ))}
+        <View style={styles.dropdownWrap}>
+          <Picker selectedValue={academicYear} onValueChange={(value) => setAcademicYear(String(value))}>
+            {yearOptions.map((y) => (
+              <Picker.Item key={y} label={y} value={y} />
+            ))}
+          </Picker>
         </View>
       </View>
 
-      <View style={{ marginTop: 16 }}>
-        <ThemedText type="subtitle">Exams</ThemedText>
-        {exams.length ? (
-          exams.map((ex: any) => (
-            <View key={ex._id} style={[styles.rowItem, selectedExam?._id === ex._id ? { backgroundColor: 'rgba(37,99,235,0.04)' } : {}]}>
-              <View style={{ flex: 1 }}>
-                <ThemedText>{ex.name || ex.title || 'Exam'}</ThemedText>
-                <ThemedText style={{ opacity: 0.7, fontSize: 12 }}>
-                  {ex.code || ''}{ex.code && ex.totalMarks ? ' · ' : ''}{ex.totalMarks ? `${ex.totalMarks} marks` : ''}
-                </ThemedText>
-              </View>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Pressable onPress={() => void loadExamTemplate(ex)} style={[styles.secondaryButton, { paddingHorizontal: 10 }]}>
-                  <ThemedText>Load Template</ThemedText>
-                </Pressable>
-                <Pressable onPress={() => { setSelectedExam(ex); void loadExamTemplate(ex); }} style={[styles.primaryButton, { paddingHorizontal: 10 }]}>
-                  <ThemedText style={{ color: '#fff' }}>Use Template</ThemedText>
-                </Pressable>
-              </View>
-            </View>
-          ))
-        ) : (
-          <ThemedText style={{ marginTop: 8 }}>No exams found.</ThemedText>
-        )}
+      <View style={{ marginTop: 12 }}>
+        <ThemedText type="subtitle">Assessment Type</ThemedText>
+        <View style={styles.dropdownWrap}>
+          <Picker selectedValue={type} onValueChange={(value) => handleAssessmentTypeChange(value as 'exam' | 'test' | 'assignment')}>
+            {assessmentTypeOptions.map((option) => (
+              <Picker.Item key={option.value} label={option.label} value={option.value} />
+            ))}
+          </Picker>
+        </View>
       </View>
+
+      {type === 'exam' ? (
+        <View style={{ marginTop: 16 }}>
+          <ThemedText type="subtitle">Exams</ThemedText>
+          <View style={styles.dropdownWrap}>
+            <Picker
+              selectedValue={selectedExamValue}
+              onValueChange={(value) => {
+                const nextExam = exams.find((exam: any) => String(exam._id) === String(value));
+                if (!nextExam) {
+                  setSelectedExam(null);
+                  setRows([]);
+                  setEditing(false);
+                  setTitle('');
+                  return;
+                }
+
+                void loadExamTemplate(nextExam);
+              }}
+            >
+              <Picker.Item label="Select exam template" value="" />
+              {exams.map((ex: any) => (
+                <Picker.Item
+                  key={ex._id}
+                  label={ex.code ? `${ex.name || ex.title || 'Exam'} · ${ex.code}` : (ex.name || ex.title || 'Exam')}
+                  value={ex._id}
+                />
+              ))}
+            </Picker>
+          </View>
+          {!exams.length ? <ThemedText style={{ marginTop: 8 }}>No exams found.</ThemedText> : null}
+        </View>
+      ) : null}
 
       {progress.length ? (
         <View style={{ marginTop: 16 }}>
@@ -282,38 +358,36 @@ export default function SubjectDetail() {
         </View>
       ) : null}
 
-      <View style={{ marginTop: 18 }}>
-        <Pressable onPress={() => startBulkEdit()} style={styles.primaryButton}>
-          <ThemedText style={{ color: '#fff' }}>Bulk Marks</ThemedText>
-        </Pressable>
-      </View>
-
       {editing ? (
         <View style={{ marginTop: 18 }}>
           <ThemedText type="subtitle">Bulk Editor</ThemedText>
           <View style={{ marginTop: 10 }}>
-            <TextInput value={title} onChangeText={setTitle} placeholder="Title" style={{ padding: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', borderRadius: 8 }} />
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-              {(['exam', 'test', 'assignment'] as const).map((t) => (
-                <Pressable key={t} onPress={() => setType(t)} style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, backgroundColor: type === t ? '#2563EB' : 'transparent' }}>
-                  <ThemedText style={{ color: type === t ? '#fff' : undefined }}>{t}</ThemedText>
-                </Pressable>
-              ))}
-            </View>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder={type === 'exam' ? 'Exam title' : type === 'test' ? 'Test title' : 'Assignment title'}
+              editable={type !== 'exam'}
+              style={{ padding: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', borderRadius: 8, opacity: type === 'exam' ? 0.8 : 1 }}
+            />
             {loadingTemplate ? <ActivityIndicator style={{ marginTop: 8 }} /> : null}
-            {selectedExam ? (
+            {type === 'exam' && selectedExam ? (
               <View style={{ marginTop: 8 }}>
                 <ThemedText>Selected exam: {selectedExam.title || selectedExam.name}</ThemedText>
-                <Pressable onPress={() => { setSelectedExam(null); setRows([]); setTitle(''); setType('exam'); }} style={[styles.secondaryButton, { marginTop: 8 }]}>
+                <Pressable onPress={() => { setSelectedExam(null); setRows([]); setTitle(''); setType('exam'); setEditing(false); }} style={[styles.secondaryButton, { marginTop: 8 }]}>
                   <ThemedText>Clear selection</ThemedText>
                 </Pressable>
+              </View>
+            ) : null}
+            {type !== 'exam' ? (
+              <View style={{ marginTop: 8 }}>
+                <ThemedText>Fixed max marks: {selectedMaxMarks}</ThemedText>
               </View>
             ) : null}
           </View>
 
           {rows.map((r, idx) => (
             <View key={r.studentId || idx} style={styles.bulkRow}>
-              <ThemedText style={{ flex: 1 }}>{r.name}</ThemedText>
+              <ThemedText style={{ flex: 1, marginRight: 8 }}>{r.name}</ThemedText>
               <TextInput
                 value={String(r.marksObtained)}
                 onChangeText={(text) => setRows((prev) => { const copy = [...prev]; copy[idx] = { ...copy[idx], marksObtained: text.replace(/[^0-9.]/g, '') }; return copy; })}
@@ -323,11 +397,10 @@ export default function SubjectDetail() {
               />
               <TextInput
                 value={String(r.totalMarks)}
-                onChangeText={(text) => setRows((prev) => { const copy = [...prev]; copy[idx] = { ...copy[idx], totalMarks: text.replace(/[^0-9.]/g, '') }; return copy; })}
-                placeholder="Out of"
+                editable={false}
+                placeholder="Max"
                 keyboardType="numeric"
-                editable={!selectedExam}
-                style={[styles.smallInput, { marginLeft: 8, backgroundColor: selectedExam ? 'rgba(0,0,0,0.03)' : undefined }]}
+                style={[styles.smallInput, { marginLeft: 8, backgroundColor: 'rgba(0,0,0,0.03)' }]}
               />
             </View>
           ))}
@@ -344,7 +417,7 @@ export default function SubjectDetail() {
                 if (Number.isNaN(total) || total < 1) { Alert.alert('Validation', 'Total marks must be a number >= 1'); return; }
                 if (r.marksObtained !== '') {
                   const marks = Number(r.marksObtained);
-                  if (Number.isNaN(marks) || marks < 0 || marks > total) { Alert.alert('Validation', 'Marks must be between 0 and total marks'); return; }
+                  if (Number.isNaN(marks) || marks < 0 || marks > total) { Alert.alert('Validation', 'Marks must be between 0 and max marks'); return; }
                 }
               }
               void saveBulk();
@@ -360,16 +433,17 @@ export default function SubjectDetail() {
   return (
     <ThemedView style={styles.container}>
       <FlatList
-        data={students}
-        keyExtractor={(item) => String(item._id || item.user?._id)}
+        data={editing ? [] : students}
+        keyExtractor={studentKeyExtractor}
         ListHeaderComponent={header}
-        renderItem={({ item }) => (
-          <View style={styles.rowItem}>
-            <ThemedText>{item.user?.name || item.name || 'Student'}</ThemedText>
-            <ThemedText style={{ opacity: 0.7 }}>{item.rollNumber ? `#${item.rollNumber}` : ''}</ThemedText>
-          </View>
-        )}
+        ListEmptyComponent={editing ? null : <View />}
+        renderItem={renderStudentItem}
         contentContainerStyle={{ paddingBottom: 120 }}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews
       />
     </ThemedView>
   );
@@ -378,10 +452,11 @@ export default function SubjectDetail() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  rowItem: { paddingVertical: 8, borderBottomWidth: 1, borderColor: 'rgba(0,0,0,0.04)', flexDirection: 'row', justifyContent: 'space-between' },
+  rowItem: { paddingVertical: 8, paddingHorizontal: 14, borderBottomWidth: 1, borderColor: 'rgba(0,0,0,0.04)', flexDirection: 'row', justifyContent: 'space-between' },
   statChip: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, backgroundColor: 'rgba(37,99,235,0.08)' },
   primaryButton: { backgroundColor: '#2563EB', padding: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   secondaryButton: { backgroundColor: 'transparent', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)' },
-  bulkRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  bulkRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4 },
   smallInput: { width: 80, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  dropdownWrap: { borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', borderRadius: 10, overflow: 'hidden', marginTop: 8 },
 });
