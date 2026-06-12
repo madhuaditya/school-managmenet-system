@@ -88,6 +88,13 @@ function SummaryStat({ label, value, tone }: { label: string; value: number; ton
 
 export default function AttendanceRoster({role='Student', roster, updateStatus, mode = 'list', onSubmitBulk, submitting }: Props) {
   const listRef = useRef<FlatList<CardItem | any>>(null);
+  const onViewableItemsChangedRef = useRef(({ viewableItems }: { viewableItems: any[] }) => {
+    if (!viewableItems || viewableItems.length === 0) return;
+    const first = viewableItems[0];
+    const idx = typeof first.index === 'number' ? first.index : 0;
+    setCurrentIndex(idx);
+  });
+  const viewabilityConfigRef = useRef({ itemVisiblePercentThreshold: 50 });
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const cardHeight = Math.max(360, Math.min(screenHeight - 140, 500));
   const horizontalMargin = 12;
@@ -227,18 +234,14 @@ export default function AttendanceRoster({role='Student', roster, updateStatus, 
       )}
       {mode === 'card' ? (
         <FlatList
+          key="card-mode"
           ref={listRef}
           horizontal
           data={cardData}
           keyExtractor={(item) => item._key}
           renderItem={renderCardItem as any}
-          onViewableItemsChanged={useRef(({ viewableItems }: { viewableItems: any[] }) => {
-            if (!viewableItems || viewableItems.length === 0) return;
-            const first = viewableItems[0];
-            const idx = typeof first.index === 'number' ? first.index : 0;
-            setCurrentIndex(idx);
-          }).current}
-          viewabilityConfig={useRef({ itemVisiblePercentThreshold: 50 }).current}
+          onViewableItemsChanged={onViewableItemsChangedRef.current}
+          viewabilityConfig={viewabilityConfigRef.current}
           pagingEnabled
           decelerationRate="fast"
           snapToInterval={itemWidth}
@@ -260,6 +263,7 @@ export default function AttendanceRoster({role='Student', roster, updateStatus, 
         />
       ) : (
         <FlatList
+          key="list-mode"
           data={roster}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
