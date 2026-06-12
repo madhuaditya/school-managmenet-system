@@ -9,10 +9,10 @@ export interface DashboardModule {
 }
 
 const MODULES: Record<string, Omit<DashboardModule, 'id'>> = {
-  students: { label: 'Students', icon: 'school', color: '#00BCD4', route: '/students' },
-  teachers: { label: 'Teachers', icon: 'groups', color: '#E91E63', route: '/teachers' },
-  admin: { label: 'Admin', icon: 'admin-panel-settings', color: '#F44336', route: '/admins' },
-  staff: { label: 'Staff', icon: 'badge', color: '#2563EB', route: '/staff' },
+  students: { label: 'Students Attendance', icon: 'school', color: '#00BCD4', route: '/students' },
+  teachers: { label: 'Teachers Attendance', icon: 'groups', color: '#E91E63', route: '/teachers' },
+  admin: { label: 'Admin Attendance', icon: 'admin-panel-settings', color: '#F44336', route: '/admins' },
+  staff: { label: 'Staff Attendance', icon: 'badge', color: '#2563EB', route: '/staff' },
   adduser: { label: 'Add User', icon: 'person-add', color: '#4CAF50', route: '/adduser' },
   classes: { label: 'Classes', icon: 'menu-book', color: '#2196F3', route: '/classes' },
   subjects: { label: 'Subjects', icon: 'book', color: '#7C3AED', route: '/subjects' },
@@ -26,10 +26,11 @@ const MODULES: Record<string, Omit<DashboardModule, 'id'>> = {
   'leave-apply': { label: 'Apply Leave', icon: 'event-note', color: '#2563EB', route: '/leave-apply' },
   'my-leaves': { label: 'My Leaves', icon: 'fact-check', color: '#4F46E5', route: '/my-leaves' },
   'leave-review': { label: 'Leave Review', icon: 'task-alt', color: '#1D4ED8', route: '/leave-review' },
-  attendance: { label: 'Attendance', icon: 'check-circle', color: '#673AB7', route: '/attendance' },
+  attendance: { label: 'My Attendance', icon: 'check-circle', color: '#673AB7', route: '/attendance' },
   notices: { label: 'Notices', icon: 'notifications', color: '#FF9800', route: '/notice' },
   profile: { label: 'Profile', icon: 'person', color: '#0EA5E9', route: '/profile' },
   performance: { label: 'Performance', icon: 'bar-chart', color: '#9333EA', route: '/performance' },
+  chat: { label: 'Chat', icon: 'chat', color: '#0EA5E9', route: '/doubts' },
 };
 
 const ROLE_MENU_ORDER: Record<UserRole, string[]> = {
@@ -41,13 +42,14 @@ const ROLE_MENU_ORDER: Record<UserRole, string[]> = {
     'adduser',
     'classes',
     'subjects',
-    'fee-structure',
-    'fee-payments',
-    'salary-structure',
-    'salary-payments',
+    // 'fee-structure',
+    // 'fee-payments',
+    // 'salary-structure',
+    // 'salary-payments',
     'my-salary',
     'create-alert',
     'my-alerts',
+    // 'chat',
     'leave-apply',
     'my-leaves',
     'leave-review',
@@ -59,14 +61,21 @@ const ROLE_MENU_ORDER: Record<UserRole, string[]> = {
     'students',
     'subjects',
     'attendance',
+    // 'chat',
     'leave-apply',
     'my-leaves',
     'my-salary',
     'my-alerts',
     'profile',
   ],
-  student: ['attendance', 'leave-apply', 'my-leaves', 'performance', 'my-alerts', 'profile'],
-  staff: ['attendance', 'leave-apply', 'my-leaves', 'my-salary', 'my-alerts', 'profile'],
+  student: ['attendance', 
+    // 'chat', 
+    // 'leave-apply',
+    //  'my-leaves', 
+     'performance', 'my-alerts', 'profile'],
+  staff: ['attendance', 
+    // 'chat', 
+    'leave-apply',  'my-salary', 'my-leaves', 'my-alerts', 'profile'], //
 };
 
 export const getDashboardModulesForRole = (role: UserRole | null | undefined, userId?: string): DashboardModule[] => {

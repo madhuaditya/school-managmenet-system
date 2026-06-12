@@ -21,17 +21,53 @@ import {
   SalaryStructure,
   SalaryRecord,
   SalaryPayment,
+  BroadcastAudiencePayload,
+  BroadcastDelivery,
+  BroadcastHistoryItem,
+  BroadcastPreviewResponse,
+  BroadcastSendPayload,
   FeeStructure,
   FeeRecord,
   FeePayment,
   AppAlert,
   LeaveRequest,
+  MessagingAttachment,
+  MessagingContact,
+  MessagingConversation,
+  MessagingMessagesPage,
+  MessagingMessage,
 } from '@/src/types';
 // import { useAuthStore } from '@/src/store/auth.store';
+import { forceLogoutAndRedirect } from '../src/services/sessionManager';
 type RefreshResponse = ApiResponse<{ accessToken: string }>;
+type SalaryHistoryPagination = {
+  page: number;
+  limit: number;
+  totalRecords: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
+type SalaryHistoryResponse = ApiResponse<{
+  staffId: string;
+  totalPayments: number;
+  records: SalaryPayment[];
+  pagination: SalaryHistoryPagination;
+}>;
 
 class ApiService {
   private client: AxiosInstance;
+
+  private async getZustandState(): Promise<{ accessToken?: string | null; refreshToken?: string | null; user?: any } | null> {
+    try {
+      const obj = await AsyncStorage.getItem('school-mis-auth-store');
+      const parsed = obj ? JSON.parse(obj) : null;
+      return parsed?.state || null;
+    } catch (e) {
+      return null;
+    }
+  }
 
   constructor() {
     this.client = axios.create({
@@ -43,22 +79,18 @@ class ApiService {
     });
 
     this.client.interceptors.request.use(async (config) => {
-      const obj = await AsyncStorage.getItem('school-mis-auth-store');
-      const parsed = obj ? JSON.parse(obj) : null;
-      const token = parsed?.state?.accessToken || (await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN));
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+      const state = await this.getZustandState();
+      const token = state?.accessToken || null;
+      if (token) config.headers.Authorization = `Bearer ${token}`;
       return config;
     });
 
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        if (error.response?.status === 401) {
-          await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-          await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-          await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        if (error.response?.status === 401 || error.response?.status === 444) {
+          // Clear persisted zustand store and legacy keys on unauthorized/forced logout.
+          await forceLogoutAndRedirect();
         }
         return Promise.reject(this.normalizeError(error));
       },
@@ -73,8 +105,8 @@ class ApiService {
   }
 
   private async getAuthConfig(params?: Record<string, unknown>) {
-    const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-
+    const state = await this.getZustandState();
+    const token = state?.accessToken || null;
     return {
       params,
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -108,6 +140,18 @@ class ApiService {
   private async del<T>(url: string): Promise<T> {
     const config = await this.getAuthConfig();
     const response = await this.client.delete<T>(url, config);
+    return response.data;
+  }
+
+  private async postMultipart<T>(url: string, formData: FormData): Promise<T> {
+    const state = await this.getZustandState();
+    const token = state?.accessToken || null;
+    const response = await this.client.post<T>(url, formData, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   }
 
@@ -197,6 +241,31 @@ class ApiService {
 
   async resetPassword(token: string, password: string): Promise<ApiResponse<null>> {
     return this.post('/auth/reset-password', { token, password });
+  }
+
+  async submitPublicContact(payload: {
+    name: string;
+    email: string;
+    phone: string;
+    message: string;
+    type?: 'contact';
+  }): Promise<ApiResponse<unknown>> {
+    return this.post('/feedback/public/contact', payload);
+  }
+
+  async submitPublicFeedback(payload: {
+    name: string;
+    email: string;
+    rating: string;
+    message: string;
+    type?: 'feedback';
+  }): Promise<ApiResponse<unknown>> {
+    return this.post('/feedback/public/review', payload);
+  }
+
+  // OTP verification (mobile/web two-step login)
+  async verifyOtp(token: string, code: string): Promise<ApiResponse<AuthResponse>> {
+    return this.post('/auth/verify-otp', { token, code });
   }
 
   async changeRole(userId: string, role: string): Promise<ApiResponse<User>> {
@@ -343,6 +412,48 @@ class ApiService {
     return this.get('/attendance/class', params);
   }
 
+  async getTodayClassAttendance(classId: string): Promise<
+    ApiResponse<{
+      classInfo: { _id: string; name: string; grade?: number | string; section?: string };
+      date: string;
+      attendance: Array<{
+        studentId: string;
+        userId: string;
+        name: string;
+        email?: string;
+        phone?: string;
+        rollNumber?: string;
+        studentIdCode?: string;
+        fatherName?: string;
+        motherName?: string;
+        status: 'present' | 'absent' | 'leave' | 'not-marked';
+        remarks?: string | null;
+      }>;
+      summary?: { total: number; present: number; absent: number; leave: number; notMarked?: number };
+    }>
+  > {
+    return this.get(`/attendance/today/class/${classId}`);
+  }
+
+  async getTodayAttendanceByRole(role: 'admin' | 'teacher' | 'staff'): Promise<
+    ApiResponse<{
+      role: string;
+      date: string;
+      attendance: Array<{
+        _id: string;
+        userId?: string;
+        name?: string;
+        email?: string;
+        phone?: string;
+        status: 'present' | 'absent' | 'leave' | 'not-marked';
+        remarks?: string | null;
+      }>;
+      summary?: { total: number; present: number; absent: number; leave: number; notMarked?: number };
+    }>
+  > {
+    return this.get(`/attendance/today/role/${role}`);
+  }
+
   async getStaffAttendance(params: { staffId: string; month?: number; year?: number }): Promise<ApiResponse<Attendance[]>> {
     return this.get('/attendance/staff', params);
   }
@@ -361,6 +472,20 @@ class ApiService {
     return this.post('/attendance/update', payload);
   }
 
+  async bulkMarkAttendance(payload: {
+    classId?: string;
+    date?: string;
+    requestId?: string;
+    records: Array<{
+      userId: string;
+      status: 'present' | 'absent' | 'leave';
+      remarks?: string;
+      classId?: string;
+    }>;
+  }): Promise<ApiResponse<{ updated: number; inserted: number; records?: Attendance[] }>> {
+    return this.post('/attendance/bulk-mark', payload);
+  }
+
   async getTodayAttendance(id: string): Promise<ApiResponse<Attendance>> {
     return this.get(`/attendance/get-today/${id}`);
   }
@@ -372,6 +497,31 @@ class ApiService {
 
   async getStudentPerformance(studentId: string): Promise<ApiResponse<Grade[]>> {
     return this.get(`/progress/student/${studentId}`);
+  }
+
+  // Subject dashboard/details + bulk progress APIs (web parity)
+  async getSubjectDashboard(): Promise<ApiResponse<any>> {
+    return this.get('/subject/dashboard');
+  }
+
+  async getSubjectDetails(subjectId: string, academicYear?: string): Promise<ApiResponse<any>> {
+    return this.get(`/subject/${subjectId}/details`, academicYear ? { academicYear } : undefined);
+  }
+
+  async getExamProgressTemplate(examId: string, academicYear?: string): Promise<ApiResponse<any>> {
+    return this.get(`/progress/exam/${examId}/template`, academicYear ? { academicYear } : undefined);
+  }
+
+  async bulkCreateProgress(payload: Record<string, unknown>): Promise<ApiResponse<any>> {
+    return this.post('/progress/bulk-create', payload);
+  }
+
+  async bulkUpdateProgress(payload: Record<string, unknown>): Promise<ApiResponse<any>> {
+    return this.put('/progress/bulk-update', payload);
+  }
+
+  async getSubjectRanking(subjectId: string): Promise<ApiResponse<any>> {
+    return this.get(`/progress/subject/${subjectId}/ranking`);
   }
 
   async getPerformanceById(progressId: string): Promise<ApiResponse<Grade>> {
@@ -409,10 +559,9 @@ class ApiService {
     studentId: string,
   ): Promise<string> {
 
-    // const token = useAuthStore.getState().accessToken || (await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)) || '';
-     const obj = await AsyncStorage.getItem('school-mis-auth-store');
-      const parsed = obj ? JSON.parse(obj) : null;
-      const token = parsed?.state?.accessToken || (await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN));
+    // prefer zustand persisted store as single source of truth
+    const state = await this.getZustandState();
+    const token = state?.accessToken || '';
      
     const tokenQuery = encodeURIComponent(token);
     if (format === 'advanced') return `${API_BASE_URL}/progress/advanced-report/${studentId}?token=${tokenQuery}`;
@@ -457,7 +606,8 @@ class ApiService {
     fileName?: string;
     mimeType?: string;
   }): Promise<ApiResponse<{ image: string }>> {
-    const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    const state = await this.getZustandState();
+    const token = state?.accessToken || null;
     const formData = new FormData();
 
     formData.append('image', {
@@ -478,6 +628,34 @@ class ApiService {
 
   async getUserProfile(id: string): Promise<ApiResponse<User>> {
     return this.get(`/profile/${id}`);
+  }
+
+  async searchSchoolUsers(params: {
+    q: string;
+    limit?: number;
+  }): Promise<ApiResponse<Array<{
+    _id: string;
+    name: string;
+    username?: string;
+    email?: string;
+    phone?: string;
+    image?: string;
+    role?: string;
+  }>>> {
+    return this.get('/profile/search/users', params);
+  }
+
+  async searchMessagingUsers(params: { q: string; limit?: number }): Promise<ApiResponse<Array<{
+    _id: string;
+    name: string;
+    username?: string;
+    email?: string;
+    phone?: string;
+    image?: string;
+    role?: string;
+  }>>> {
+    // Messaging search endpoint (school-scoped contacts)
+    return this.get('/messaging/contacts', params);
   }
 
   // Legacy placeholders for data compatibility
@@ -560,6 +738,10 @@ class ApiService {
 
   async markAlertAsViewed(alertId: string): Promise<ApiResponse<AppAlert>> {
     return this.put(`/alert/${alertId}/mark-viewed`);
+  }
+
+  async registerPushToken(pushToken: string): Promise<ApiResponse<null>> {
+    return this.put('/profile/push-token', { pushToken });
   }
 
   async getFees(): Promise<ApiResponse<Fee[]>> {
@@ -668,9 +850,9 @@ class ApiService {
     staffId: string;
     page?: number;
     limit?: number;
-  }): Promise<ApiResponse<{ records: SalaryPayment[]; pagination: Record<string, unknown> }>> {
+  }): Promise<SalaryHistoryResponse> {
     const { staffId, ...rest } = params;
-    return this.get(`/salary-management/payment/staff/${staffId}/history`, rest);
+    return this.get(`/salary-management/summary/staff/${staffId}/history`, rest);
   }
 
   // Fee structure APIs
@@ -872,6 +1054,96 @@ class ApiService {
 
   async getRepliesByChat(chatId: string, params?: { page?: number; size?: number }): Promise<ApiResponse<PaginatedItems<ChatReply>>> {
     return this.get(`/reply/chat/${chatId}`, params);
+  }
+
+  // Messaging APIs
+  async getMessagingContacts(params?: { q?: string; roles?: string[] }): Promise<ApiResponse<MessagingContact[]>> {
+    return this.get('/messaging/contacts', {
+      q: params?.q,
+      roles: params?.roles?.join(','),
+    });
+  }
+
+  async createDirectConversation(targetUserId: string): Promise<ApiResponse<MessagingConversation>> {
+    return this.post('/messaging/conversations/direct', { targetUserId });
+  }
+
+  async createMessagingGroup(payload: {
+    name: string;
+    description?: string;
+    memberIds: string[];
+  }): Promise<ApiResponse<MessagingConversation>> {
+    return this.post('/messaging/conversations/groups', payload);
+  }
+
+  async getMessagingConversations(): Promise<ApiResponse<MessagingConversation[]>> {
+    return this.get('/messaging/conversations');
+  }
+
+  async getBroadcastConversation(): Promise<ApiResponse<MessagingConversation>> {
+    return this.get('/messaging/broadcast');
+  }
+
+  async previewBroadcastRecipients(payload: BroadcastAudiencePayload): Promise<ApiResponse<BroadcastPreviewResponse>> {
+    return this.post('/broadcast/preview-recipients', payload);
+  }
+
+  async sendBroadcast(payload: BroadcastSendPayload): Promise<ApiResponse<BroadcastHistoryItem>> {
+    return this.post('/broadcast/send', payload);
+  }
+
+  async getBroadcastHistory(): Promise<ApiResponse<BroadcastHistoryItem[]>> {
+    return this.get('/broadcast/history');
+  }
+
+  async getBroadcastById(broadcastId: string): Promise<ApiResponse<BroadcastHistoryItem>> {
+    return this.get(`/broadcast/${broadcastId}`);
+  }
+
+  async getBroadcastDeliveries(broadcastId: string): Promise<ApiResponse<BroadcastDelivery[]>> {
+    return this.get(`/broadcast/${broadcastId}/deliveries`);
+  }
+
+  async getMessagingMessages(
+    conversationId: string,
+    params?: { page?: number; limit?: number },
+  ): Promise<ApiResponse<MessagingMessagesPage>> {
+    return this.get(`/messaging/conversations/${conversationId}/messages`, params);
+  }
+
+  async uploadMessagingAsset(payload: {
+    uri: string;
+    fileName?: string;
+    mimeType?: string;
+  }): Promise<ApiResponse<MessagingAttachment>> {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: payload.uri,
+      name: payload.fileName || `attachment-${Date.now()}`,
+      type: payload.mimeType || 'application/octet-stream',
+    } as unknown as Blob);
+
+    return this.postMultipart('/messaging/uploads', formData);
+  }
+
+  async sendMessagingMessage(
+    conversationId: string,
+    payload: {
+      type?: string;
+      bodyPlain?: string;
+      bodyMarkdown?: string;
+      attachments?: MessagingAttachment[];
+      replyToMessageId?: string;
+    },
+  ): Promise<ApiResponse<MessagingMessage>> {
+    return this.post(`/messaging/conversations/${conversationId}/messages`, payload);
+  }
+
+  async markMessagingConversationRead(
+    conversationId: string,
+    messageId?: string,
+  ): Promise<ApiResponse<{ conversationId: string; lastReadMessage?: string | null; lastReadAt?: string | null; unreadCount: number }>> {
+    return this.post(`/messaging/conversations/${conversationId}/read`, messageId ? { messageId } : {});
   }
 
   

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 
 import { apiService } from '@/api/client';
@@ -8,12 +9,14 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuthStore } from '@/src/store/auth.store';
+import AttendanceRoster from '@/components/AttendanceRoster';
 
 interface StaffUser {
   _id: string;
   name?: string;
   email?: string;
   phone?: string;
+  image?: string;
   city?: string;
   state?: string;
   address?: string;
@@ -40,9 +43,49 @@ export default function StaffScreen() {
   const [error, setError] = useState<string | null>(null);
   const [submittingForStaff, setSubmittingForStaff] = useState<string | null>(null);
   const [todayStatusByStaff, setTodayStatusByStaff] = useState<Record<string, AttendanceState>>({});
+  const [mode, setMode] = useState<'list' | 'card'>('card');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'not-marked' | 'present' | 'absent' | 'leave'>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [modeOpen, setModeOpen] = useState(false);
 
   const role = typeof user?.role === 'string' ? user.role : user?.role?.role;
   const staffCount = useMemo(() => staff.length, [staff]);
+
+  const statusFilterOptions = useMemo(() => ([
+    { label: 'All', value: 'all' },
+    { label: 'Not Marked', value: 'not-marked' },
+    { label: 'Present', value: 'present' },
+    { label: 'Absent', value: 'absent' },
+    { label: 'Leave', value: 'leave' },
+  ] as const), []);
+
+  const activeFilterLabel = useMemo(() => statusFilterOptions.find((option) => option.value === statusFilter)?.label || 'All', [statusFilter, statusFilterOptions]);
+  const activeModeLabel = mode === 'card' ? 'Card' : 'List';
+  const isCardMode = mode === 'card';
+
+  const filteredStaff = useMemo(() => {
+    const search = searchQuery.trim().toLowerCase();
+
+    return staff.filter((staffMember) => {
+      const status = todayStatusByStaff[staffMember._id] || 'not-marked';
+      const matchesStatus = statusFilter === 'all' || status === statusFilter;
+      if (!matchesStatus) return false;
+
+      if (!search) return true;
+
+      const searchableText = [
+        staffMember.user?.name,
+        staffMember.user?.email,
+        staffMember.user?.phone,
+        staffMember.user?.city,
+        staffMember.user?.state,
+        staffMember.user?.address,
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return searchableText.includes(search);
+    });
+  }, [staff, searchQuery, statusFilter, todayStatusByStaff]);
 
   useEffect(() => {
     if (role !== 'admin') {
@@ -73,24 +116,44 @@ export default function StaffScreen() {
   const hydrateTodayAttendanceStatus = async (staffList: StaffRecord[]) => {
     const statusMap: Record<string, AttendanceState> = {};
 
-    await Promise.all(
-      staffList.map(async (staffMember) => {
+    try {
+      const attendanceResponse = await apiService.getTodayAttendanceByRole('staff');
+      
+      const attendanceList = attendanceResponse.data?.attendance || [];
+      // console.log('Attendance response for staff:', attendanceList);
+      const statusByUserId = new Map<string, AttendanceState>();
+      attendanceList.forEach((entry) => {
+        // console.log('Processing attendance entry:', entry);
+        const status = entry.status || 'not-marked';
+        [entry.userId, entry._id].forEach((key) => {
+          if (key) {
+            statusByUserId.set(String(key), status);
+          }
+        });
+      });
+
+      // console.log('Mapped attendance status by user ID:', Array.from(statusByUserId.entries()));
+
+      staffList.forEach((staffMember) => {
         const staffUserId = staffMember.user?._id || staffMember._id;
         if (!staffUserId) {
           statusMap[staffMember._id] = 'not-marked';
           return;
         }
 
-        try {
-          const attendanceResponse = await apiService.getTodayAttendance(staffUserId);
-          const attendancePayload = attendanceResponse.data as { attendance?: Array<{ status?: AttendanceState }> } | undefined;
-          const attendanceList = attendancePayload?.attendance || [];
-          statusMap[staffMember._id] = attendanceList[0]?.status || 'not-marked';
-        } catch {
-          statusMap[staffMember._id] = 'not-marked';
+        const status = statusByUserId.get(String(staffUserId)) || 'not-marked';
+        statusMap[staffMember._id] = status;
+        statusMap[String(staffUserId)] = status;
+      });
+    } catch {
+      staffList.forEach((staffMember) => {
+        statusMap[staffMember._id] = 'not-marked';
+        const staffUserId = staffMember.user?._id || staffMember._id;
+        if (staffUserId) {
+          statusMap[String(staffUserId)] = 'not-marked';
         }
-      }),
-    );
+      });
+    }
 
     setTodayStatusByStaff(statusMap);
   };
@@ -125,7 +188,7 @@ export default function StaffScreen() {
       }
 
       setTodayStatusByStaff((prev) => ({ ...prev, [staffMember._id]: status }));
-      Alert.alert('Attendance Updated', `${staffMember.user?.name || 'Staff'} marked ${status}.`);
+      // Alert.alert('Attendance Updated', `${staffMember.user?.name || 'Staff'} marked ${status}.`);
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Could not mark attendance.');
     } finally {
@@ -228,19 +291,101 @@ export default function StaffScreen() {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.header}>
-        <ThemedText style={styles.count}>{staffCount} staff members found</ThemedText>
+        <View style={styles.searchWrap}>
+          <MaterialCommunityIcons name="magnify" size={18} color={theme.icon} style={styles.searchIcon} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search staff"
+            placeholderTextColor={theme.icon}
+            style={[styles.searchInput, { color: theme.text, borderColor: theme.icon, backgroundColor: theme.background }]}
+          />
+        </View>
+        <View style={styles.toolbarRow}>
+          <View style={styles.filterWrap}>
+            <Pressable
+              onPress={() => {
+                setFilterOpen((prev) => !prev);
+                setModeOpen(false);
+              }}
+              style={({ pressed }) => [styles.dropdownButton, pressed && styles.modeChipPressed]}>
+              <ThemedText style={styles.dropdownButtonText}>Filter: {activeFilterLabel}</ThemedText>
+              <MaterialCommunityIcons name={filterOpen ? 'chevron-up' : 'chevron-down'} size={18} color={theme.tint} />
+            </Pressable>
+
+            {filterOpen ? (
+              <View style={[styles.filterMenu, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+                {statusFilterOptions.map((option) => {
+                  const isActive = statusFilter === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => {
+                        setStatusFilter(option.value);
+                        setFilterOpen(false);
+                      }}
+                      style={({ pressed }) => [styles.filterOption, isActive && styles.filterOptionActive, pressed && styles.filterOptionPressed]}>
+                      <ThemedText style={[styles.filterOptionText, isActive && styles.filterOptionTextActive]}>{option.label}</ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.filterWrap}>
+            <Pressable
+              onPress={() => {
+                setModeOpen((prev) => !prev);
+                setFilterOpen(false);
+              }}
+              style={({ pressed }) => [styles.dropdownButton, isCardMode && styles.dropdownButtonActive, pressed && styles.modeChipPressed]}>
+              <ThemedText style={[styles.dropdownButtonText, isCardMode && styles.dropdownButtonTextActive]}>View: {activeModeLabel}</ThemedText>
+              <MaterialCommunityIcons name={modeOpen ? 'chevron-up' : 'chevron-down'} size={18} color={isCardMode ? '#fff' : theme.tint} />
+            </Pressable>
+
+            {modeOpen ? (
+              <View style={[styles.filterMenu, { borderColor: theme.icon, backgroundColor: theme.background }]}>
+                {(['card', 'list'] as const).map((option) => {
+                  const isActive = mode === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => {
+                        setMode(option);
+                        setModeOpen(false);
+                      }}
+                      style={({ pressed }) => [styles.filterOption, isActive && styles.filterOptionActive, pressed && styles.filterOptionPressed]}>
+                      <ThemedText style={[styles.filterOptionText, isActive && styles.filterOptionTextActive]}>{option === 'card' ? 'Card' : 'List'}</ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
+        </View>
       </View>
 
-      <FlatList
-        data={staff}
-        keyExtractor={(item) => item._id}
-        renderItem={renderStaffCard}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <ThemedView style={styles.centered}>
-            <ThemedText>No staff found</ThemedText>
-          </ThemedView>
-        }
+      <AttendanceRoster
+         role='Staff'
+        roster={filteredStaff.map((s) => ({
+          _key: s._id,
+          _id: s._id,
+          name: s.user?.name || 'Unnamed Staff',
+          image: s.user?.image || null,
+          rollNumber: undefined,
+          studentIdCode: s.user?._id || s._id,
+          email: s.user?.email,
+          fatherName: null,
+          motherName: null,
+          currentStatus: todayStatusByStaff[s._id] || (s.user?._id ? todayStatusByStaff[s.user._id] : undefined) || 'not-marked',
+        }))}
+        mode={mode}
+        updateStatus={(row, status) => {
+          const target = staff.find((x) => x._id === row._id);
+          if (!target) return;
+          void markStaffAttendance(target, status);
+        }}
       />
     </ThemedView>
   );
@@ -255,10 +400,97 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 12,
   },
+  searchWrap: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  searchIcon: {
+    marginLeft: 10,
+    marginRight: 6,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingRight: 12,
+    fontWeight: '600',
+  },
+  toolbarRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  filterWrap: { position: 'relative', flex: 1 },
+  modeChip: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(100,116,139,0.22)',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(100,116,139,0.22)',
+  },
+  dropdownButtonActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  dropdownButtonText: {
+    fontWeight: '800',
+    color: '#2563eb',
+  },
+  dropdownButtonTextActive: {
+    color: '#fff',
+  },
+  modeChipActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  modeChipText: {
+    fontWeight: '800',
+    color: '#2563eb',
+  },
+  modeChipTextActive: {
+    color: '#fff',
+  },
+  modeChipPressed: {
+    opacity: 0.9,
+  },
   count: {
     marginTop: 6,
     fontWeight: '600',
   },
+  filterMenu: {
+    position: 'absolute',
+    top: 42,
+    right: 0,
+    zIndex: 20,
+    minWidth: 160,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  filterOption: { borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
+  filterOptionActive: { backgroundColor: 'rgba(37,99,235,0.12)' },
+  filterOptionPressed: { opacity: 0.82 },
+  filterOptionText: { fontWeight: '700' },
+  filterOptionTextActive: { color: '#2563eb' },
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 24,

@@ -84,7 +84,7 @@ export default function SchoolAdminSetupScreen() {
       }
 
       Alert.alert('Success', 'Admin created successfully.');
-      router.replace('/school-login');
+      router.replace('/');
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to create admin');
     } finally {
@@ -94,7 +94,7 @@ export default function SchoolAdminSetupScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} >
         <Text style={styles.title}>Create School Admin</Text>
         <Text style={styles.subtitle}>{schoolName}</Text>
 

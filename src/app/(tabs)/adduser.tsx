@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Platform,
   Modal,
   ScrollView,
   StyleSheet,
+  Platform,
   TextInput,
   TouchableOpacity,
   View,
@@ -20,6 +20,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/src/store/auth.store';
+import AddressLookupField from '@/components/forms/AddressLookupField';
 
 type UserType = 'admin' | 'teacher' | 'student' | 'staff';
 type Gender = 'Male' | 'Female' | 'Other' | 'Prefer not to say';
@@ -69,6 +70,16 @@ const getSchoolId = (school: unknown): string => {
 export default function AddUserScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const isDark = colorScheme === 'dark';
+  const screenBg = isDark ? '#0B1220' : theme.background;
+  const cardBg = isDark ? '#111827' : '#FFFFFF';
+  const surfaceBg = isDark ? '#0F172A' : '#F5F5F5';
+  const textColor = isDark ? '#F9FAFB' : '#111827';
+  const mutedColor = isDark ? '#94A3B8' : theme.tabIconDefault;
+  const borderColor = isDark ? '#334155' : '#E5E7EB';
+  const primaryButtonBg = isDark ? '#2563EB' : theme.tint;
+  const neutralButtonBg = isDark ? 'rgba(37, 99, 235, 0.14)' : '#fff';
+  const modalHeaderBorder = isDark ? '#334155' : '#E5E7EB';
   const user = useAuthStore((state) => state.user);
 
   const [userType, setUserType] = useState<UserType>('student');
@@ -147,16 +158,18 @@ export default function AddUserScreen() {
             : Promise.resolve(null),
         ]);
 
-        if (usernameResult?.success && usernameResult.data?.username) {
-          setFormData((prev) => ({ ...prev, username: usernameResult.data.username }));
+        const generatedUsername = usernameResult?.data?.username;
+        if (usernameResult?.success && generatedUsername) {
+          setFormData((prev) => ({ ...prev, username: generatedUsername }));
         }
 
         if (passwordResult?.data?.password) {
           setFormData((prev) => ({ ...prev, password: passwordResult.data.password, confirmPassword: passwordResult.data.password }));
         }
 
-        if (studentIdResult?.success && studentIdResult.data?.studentId) {
-          setFormData((prev) => ({ ...prev, studentId: studentIdResult.data.studentId }));
+        const generatedStudentId = studentIdResult?.data?.studentId;
+        if (studentIdResult?.success && generatedStudentId) {
+          setFormData((prev) => ({ ...prev, studentId: generatedStudentId }));
         }
       } catch {
         if (!formData.password.trim()) {
@@ -175,8 +188,9 @@ export default function AddUserScreen() {
     const fillRollNumber = async () => {
       try {
         const response = await apiService.generateRollNumber({ classId: selectedClass._id });
-        if (response.success && response.data?.rollNumber) {
-          setFormData((prev) => ({ ...prev, rollNumber: response.data.rollNumber }));
+        const generatedRollNumber = response.data?.rollNumber;
+        if (response.success && generatedRollNumber) {
+          setFormData((prev) => ({ ...prev, rollNumber: generatedRollNumber }));
         }
       } catch {
         // Keep manual value if generator fails.
@@ -204,6 +218,7 @@ export default function AddUserScreen() {
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
   };
+
 
   const handleClassSelection = (item: ClassItem) => {
     const today = new Date().toISOString().split('T')[0];
@@ -376,7 +391,7 @@ export default function AddUserScreen() {
       editable?: boolean;
     }
   ) => (
-    <View style={styles.fieldContainer}>
+    <View style={styles.fieldContainer} >
       <ThemedText style={styles.label}>{label}</ThemedText>
       <TextInput
         style={[
@@ -401,15 +416,18 @@ export default function AddUserScreen() {
   );
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ThemedView style={[styles.container, { backgroundColor: screenBg }]}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent]}
+        showsVerticalScrollIndicator={false}>
         <View style={styles.typeSelector}>
           {(['admin', 'teacher', 'student', 'staff'] as UserType[]).map((type) => (
             <TouchableOpacity
               key={type}
               style={[
                 styles.typeButton,
-                userType === type && [styles.typeButtonActive, { backgroundColor: theme.tint }],
+                { borderColor, backgroundColor: cardBg },
+                userType === type && [styles.typeButtonActive, { backgroundColor: primaryButtonBg, borderColor: primaryButtonBg }],
               ]}
               onPress={() => setUserType(type)}
               disabled={submitting}
@@ -425,7 +443,7 @@ export default function AddUserScreen() {
                         : 'briefcase'
                 }
                 size={22}
-                color={userType === type ? '#fff' : theme.text}
+                color={userType === type ? '#fff' : textColor}
               />
               <ThemedText style={[styles.typeButtonText, userType === type && styles.typeButtonTextActive]}>
                 {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -444,7 +462,7 @@ export default function AddUserScreen() {
           {renderFormField('Password', 'password', 'Enter password', { secureTextEntry: true })}
           {renderFormField('Confirm Password', 'confirmPassword', 'Confirm password', { secureTextEntry: true })}
 
-          <View style={styles.fieldContainer}>
+          <View style={styles.fieldContainer} >
             <ThemedText style={styles.label}>Gender</ThemedText>
             <View style={styles.genderRow}>
               {(['Male', 'Female', 'Other', 'Prefer not to say'] as Gender[]).map((gender) => {
@@ -452,7 +470,11 @@ export default function AddUserScreen() {
                 return (
                   <TouchableOpacity
                     key={gender}
-                    style={[styles.genderChip, selected && { backgroundColor: theme.tint, borderColor: theme.tint }]}
+                    style={[
+                      styles.genderChip,
+                      { borderColor, backgroundColor: cardBg },
+                      selected && { backgroundColor: primaryButtonBg, borderColor: primaryButtonBg },
+                    ]}
                     onPress={() => updateFormField('gender', gender)}
                     disabled={submitting}
                   >
@@ -464,10 +486,22 @@ export default function AddUserScreen() {
           </View>
 
           <ThemedText style={styles.sectionSubtitle}>Address Information</ThemedText>
-          {renderFormField('Address', 'address', 'Enter address', { multiline: true })}
-          {renderFormField('City', 'city', 'Enter city')}
-          {renderFormField('State', 'state', 'Enter state')}
-          {renderFormField('Pin Code', 'pinCode', 'Enter 6-digit pin code', { keyboardType: 'numeric' })}
+          <AddressLookupField
+            address={formData.address}
+            setAddress={(value) => updateFormField('address', value)}
+            pincode={formData.pinCode}
+            setPincode={(value) => updateFormField('pinCode', value)}
+            city={formData.city}
+            setCity={(value) => updateFormField('city', value)}
+            state={formData.state}
+            setState={(value) => updateFormField('state', value)}
+            errors={{
+              address: errors.address,
+              city: errors.city,
+              state: errors.state,
+              pincode: errors.pinCode,
+            }}
+          />
 
           {userType === 'teacher' &&
             renderFormField('Qualifications', 'qualifications', 'Enter qualifications (e.g., B.Tech, M.Tech)', {
@@ -487,14 +521,14 @@ export default function AddUserScreen() {
               <View style={styles.fieldContainer}>
                 <ThemedText style={styles.label}>Date of Birth</ThemedText>
                 <TouchableOpacity
-                  style={[styles.dateInputButton, { borderColor: errors.dateOfBirth ? '#ff6b6b' : theme.tabIconDefault }]}
+                  style={[styles.dateInputButton, { borderColor: errors.dateOfBirth ? '#ff6b6b' : borderColor, backgroundColor: surfaceBg }]}
                   onPress={() => setShowDobPicker(true)}
                   disabled={submitting}
                 >
-                  <ThemedText style={[styles.dateInputText, { color: formData.dateOfBirth ? theme.text : theme.tabIconDefault }]}>
+                  <ThemedText style={[styles.dateInputText, { color: formData.dateOfBirth ? textColor : mutedColor }]}>
                     {formData.dateOfBirth || 'Select date of birth'}
                   </ThemedText>
-                  <MaterialCommunityIcons name="calendar" size={20} color={theme.text} />
+                  <MaterialCommunityIcons name="calendar" size={20} color={textColor} />
                 </TouchableOpacity>
                 {showDobPicker ? (
                   <DateTimePicker
@@ -510,7 +544,7 @@ export default function AddUserScreen() {
 
               {renderFormField('Roll Number', 'rollNumber', 'Enter roll number')}
 
-              <View style={styles.fieldContainer}>
+              <View style={styles.fieldContainer} >
                 <ThemedText style={styles.label}>Select Class *</ThemedText>
                 {loadingClasses ? (
                   <View style={styles.loadingContainer}>
@@ -521,7 +555,7 @@ export default function AddUserScreen() {
                     <TouchableOpacity
                       style={[
                         styles.dropdownButton,
-                        { borderColor: errors.classId ? '#ff6b6b' : theme.tabIconDefault },
+                        { borderColor: errors.classId ? '#ff6b6b' : borderColor, backgroundColor: surfaceBg },
                       ]}
                       onPress={() => setClassModalVisible(true)}
                       disabled={submitting}
@@ -556,13 +590,15 @@ export default function AddUserScreen() {
                               <TouchableOpacity
                                 style={[
                                   styles.classListItem,
-                                  selectedClass?._id === item._id && { backgroundColor: theme.tint },
+                                    { backgroundColor: cardBg, borderBottomColor: modalHeaderBorder },
+                                    selectedClass?._id === item._id && { backgroundColor: primaryButtonBg },
                                 ]}
                                 onPress={() => handleClassSelection(item)}
                               >
                                 <ThemedText
                                   style={[
                                     styles.classListItemText,
+                                      { color: textColor },
                                     selectedClass?._id === item._id && styles.classListItemTextSelected,
                                   ]}
                                 >
@@ -582,17 +618,17 @@ export default function AddUserScreen() {
               </View>
 
               <ThemedText style={styles.sectionSubtitle}>Auto-filled From Class</ThemedText>
-              <View style={styles.fieldContainer}>
+              <View style={styles.fieldContainer} >
                 <ThemedText style={styles.label}>Date of Admission</ThemedText>
                 <TouchableOpacity
-                  style={[styles.dateInputButton, { borderColor: errors.dateOfAdmission ? '#ff6b6b' : theme.tabIconDefault }]}
+                  style={[styles.dateInputButton, { borderColor: errors.dateOfAdmission ? '#ff6b6b' : borderColor, backgroundColor: surfaceBg }]}
                   onPress={() => setShowAdmissionPicker(true)}
                   disabled={submitting}
                 >
-                  <ThemedText style={[styles.dateInputText, { color: formData.dateOfAdmission ? theme.text : theme.tabIconDefault }]}>
+                  <ThemedText style={[styles.dateInputText, { color: formData.dateOfAdmission ? textColor : mutedColor }]}>
                     {formData.dateOfAdmission || 'Select date of admission'}
                   </ThemedText>
-                  <MaterialCommunityIcons name="calendar" size={20} color={theme.text} />
+                  <MaterialCommunityIcons name="calendar" size={20} color={textColor} />
                 </TouchableOpacity>
                 {showAdmissionPicker ? (
                   <DateTimePicker
@@ -609,7 +645,7 @@ export default function AddUserScreen() {
           )}
 
           <TouchableOpacity
-            style={[styles.submitButton, { backgroundColor: submitting ? theme.tabIconDefault : theme.tint }]}
+            style={[styles.submitButton, { backgroundColor: submitting ? (isDark ? '#475569' : theme.tabIconDefault) : primaryButtonBg }]}
             onPress={handleAddUser}
             disabled={submitting}
             activeOpacity={0.8}
@@ -627,7 +663,7 @@ export default function AddUserScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.resetButton, { borderColor: theme.tint }]}
+            style={[styles.resetButton, { borderColor: theme.tint, backgroundColor: neutralButtonBg }]}
             onPress={resetForm}
             disabled={submitting}
             activeOpacity={0.8}
@@ -640,13 +676,13 @@ export default function AddUserScreen() {
 
       <Modal visible={successModalVisible} transparent animationType="fade" onRequestClose={() => setSuccessModalVisible(false)}>
         <View style={styles.successOverlay}>
-          <View style={[styles.successCard, { backgroundColor: theme.background }]}>
+          <View style={[styles.successCard, { backgroundColor: cardBg, borderColor }] }>
             <ThemedText type="subtitle">User Created</ThemedText>
             <ThemedText style={styles.successText}>Name: {registeredUserSummary?.name || 'N/A'}</ThemedText>
             <ThemedText style={styles.successText}>Username: {registeredUserSummary?.username || 'N/A'}</ThemedText>
             <ThemedText style={styles.successText}>Password: {registeredUserSummary?.password || 'N/A'}</ThemedText>
 
-            <TouchableOpacity style={[styles.successButton, { backgroundColor: theme.tint }]} onPress={() => setSuccessModalVisible(false)}>
+            <TouchableOpacity style={[styles.successButton, { backgroundColor: primaryButtonBg }]} onPress={() => setSuccessModalVisible(false)}>
               <ThemedText style={styles.successButtonText}>Done</ThemedText>
             </TouchableOpacity>
           </View>
@@ -656,182 +692,13 @@ export default function AddUserScreen() {
   );
 }
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     paddingBottom: 20,
-//   },
-//   typeSelector: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-around',
-//     paddingHorizontal: 10,
-//     paddingVertical: 15,
-//     gap: 8,
-//   },
-//   typeButton: {
-//     flex: 1,
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     paddingVertical: 10,
-//     paddingHorizontal: 8,
-//     borderRadius: 8,
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     gap: 4,
-//   },
-//   typeButtonActive: {
-//     borderWidth: 0,
-//   },
-//   typeButtonText: {
-//     fontSize: 12,
-//     fontWeight: '500',
-//     textAlign: 'center',
-//   },
-//   typeButtonTextActive: {
-//     color: '#fff',
-//   },
-//   formContainer: {
-//     paddingHorizontal: 16,
-//     paddingVertical: 10,
-//   },
-//   sectionTitle: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     marginBottom: 15,
-//     marginTop: 10,
-//   },
-//   sectionSubtitle: {
-//     fontSize: 14,
-//     fontWeight: '600',
-//     marginTop: 15,
-//     marginBottom: 10,
-//     opacity: 0.7,
-//   },
-//   fieldContainer: {
-//     marginBottom: 15,
-//   },
-//   label: {
-//     fontSize: 14,
-//     fontWeight: '600',
-//     marginBottom: 6,
-//   },
-//   input: {
-//     borderWidth: 1,
-//     borderRadius: 8,
-//     paddingHorizontal: 12,
-//     paddingVertical: 10,
-//     fontSize: 14,
-//     minHeight: 44,
-//   },
-//   loadingContainer: {
-//     height: 44,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   errorText: {
-//     color: '#ff6b6b',
-//     fontSize: 12,
-//     marginTop: 4,
-//   },
-//   submitButton: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     paddingVertical: 12,
-//     borderRadius: 8,
-//     marginTop: 20,
-//     gap: 8,
-//   },
-//   submitButtonText: {
-//     color: '#fff',
-//     fontSize: 16,
-//     fontWeight: '600',
-//   },
-//   resetButton: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     paddingVertical: 12,
-//     borderRadius: 8,
-//     marginTop: 10,
-//     borderWidth: 2,
-//     gap: 8,
-//   },
-//   resetButtonText: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//   },
-//   dropdownButton: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'space-between',
-//     borderWidth: 1,
-//     borderRadius: 8,
-//     paddingHorizontal: 12,
-//     paddingVertical: 10,
-//     minHeight: 44,
-//     backgroundColor: '#f5f5f5',
-//   },
-//   dropdownButtonText: {
-//     fontSize: 14,
-//     flex: 1,
-//   },
-//   dateInputButton: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'space-between',
-//     borderWidth: 1,
-//     borderRadius: 8,
-//     paddingHorizontal: 12,
-//     paddingVertical: 10,
-//     minHeight: 44,
-//     backgroundColor: '#f5f5f5',
-//   },
-//   dateInputText: {
-//     fontSize: 14,
-//     flex: 1,
-//   },
-//   modalOverlay: {
-//     flex: 1,
-//     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-//     justifyContent: 'flex-end',
-//   },
-//   modalContent: {
-//     borderTopLeftRadius: 16,
-//     borderTopRightRadius: 16,
-//     maxHeight: '80%',
-//     paddingBottom: 20,
-//   },
-//   modalHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     paddingHorizontal: 16,
-//     paddingVertical: 16,
-//     borderBottomWidth: 1,
-//     borderBottomColor: '#e0e0e0',
-//   },
-//   modalTitle: {
-//     fontSize: 18,
-//     fontWeight: '600',
-//   },
-//   classListItem: {
-//     paddingHorizontal: 16,
-//     paddingVertical: 12,
-//     borderBottomWidth: 1,
-//     borderBottomColor: '#f0f0f0',
-//   },
-//   classListItemText: {
-//     fontSize: 14,
-//   },
-//   classListItemTextSelected: {
-//     color: '#fff',
-//     fontWeight: '600',
-//   },
-// });
-
 const styles = StyleSheet.create({
+  keyboardContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     paddingBottom: 20,
@@ -852,8 +719,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#fff',
   },
 
   typeButtonActive: {
@@ -900,11 +765,9 @@ const styles = StyleSheet.create({
   },
   genderChip: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#fff',
   },
   genderText: {
     fontSize: 12,
@@ -1058,6 +921,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 18,
     gap: 10,
+    borderWidth: 1,
   },
   successText: {
     fontSize: 14,

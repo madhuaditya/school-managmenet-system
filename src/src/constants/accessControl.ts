@@ -14,6 +14,7 @@ export const ROUTE_ACCESS_RULES: RouteAccessRule[] = [
   { pattern: /^\/teachers$/, roles: ['admin'] },
   { pattern: /^\/admins$/, roles: ['admin'] },
   { pattern: /^\/myattendance$/, roles: ['student', 'staff'] },
+  { pattern: /^\/broadcast$/, roles: ['admin', 'teacher', 'staff'] },
   { pattern: /^\/leave-apply$/, roles: ['admin', 'teacher', 'student', 'staff'] },
   { pattern: /^\/my-leaves$/, roles: ['admin', 'teacher', 'student', 'staff'] },
   { pattern: /^\/leave-review$/, roles: ['admin'] },
@@ -35,9 +36,12 @@ export const ROUTE_ACCESS_RULES: RouteAccessRule[] = [
   { pattern: /^\/performance\/[^/]+$/, roles: ['admin', 'teacher', 'student'] },
   { pattern: /^\/performance\/add\/[^/]+$/, roles: ['admin', 'teacher'] },
   { pattern: /^\/performance\/edit\/[^/]+$/, roles: ['admin', 'teacher'] },
+  { pattern: /^\/chat\/[^/]+$/, roles: ['admin', 'teacher', 'student', 'staff'] },
+  { pattern: /^\/chat\/contacts$/, roles: ['admin', 'teacher', 'student', 'staff'] },
+  { pattern: /^\/chat\/new-group$/, roles: ['admin', 'teacher', 'student', 'staff'] },
 ];
 
-export const PUBLIC_PATHS = new Set<string>(['/', '/school-login', '/school-register', '/school-admin-setup']);
+export const PUBLIC_PATHS = new Set<string>(['/', '/school-admin-setup', '/about', '/contact', '/feedback']);
 
 export const getAllowedRolesForPath = (pathname: string): UserRole[] | null => {
   const matched = ROUTE_ACCESS_RULES.find((rule) => rule.pattern.test(pathname));

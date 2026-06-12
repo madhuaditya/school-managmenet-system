@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { Calendar } from 'react-native-calendars';
 
 import { apiService } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
@@ -89,6 +90,7 @@ export default function AttendanceDetailByMemberScreen() {
   const [summary, setSummary] = useState<AttendanceSummary | null>(null);
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [selectedDate, setSelectedDate] = useState<string>('');
 
   const currentRole = useMemo<UserRole | null>(() => {
     if (!currentUser?.role) return null;
@@ -236,6 +238,60 @@ export default function AttendanceDetailByMemberScreen() {
   };
 
   const totalForChart = Math.max(1, consideredDays);
+  const customCalendarHidden = true;
+  const currentMonthKey = `${year}-${String(month).padStart(2, '0')}`;
+
+  const markedDates = useMemo(() => {
+    const marks: Record<string, any> = {};
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const dateKey = `${currentMonthKey}-${String(day).padStart(2, '0')}`;
+      const status = byDate.get(dateKey);
+      const disabled = isCurrentMonth && day > consideredDays;
+
+      if (disabled) {
+        marks[dateKey] = { disabled: true, disableTouchEvent: true };
+        continue;
+      }
+
+      if (status) {
+        marks[dateKey] = {
+          customStyles: {
+            container: {
+              borderWidth: 2,
+              borderColor: statusColor(status),
+              borderRadius: 999,
+            },
+            text: {
+              color: theme.text,
+              fontWeight: '700',
+            },
+          },
+        };
+      }
+    }
+
+    if (selectedDate) {
+      const selectedStatus = byDate.get(selectedDate);
+      marks[selectedDate] = {
+        ...(marks[selectedDate] || {}),
+        customStyles: {
+          container: {
+            borderWidth: 2,
+            borderColor: selectedStatus ? statusColor(selectedStatus) : '#2563eb',
+            borderRadius: 999,
+            backgroundColor: selectedStatus ? `${statusColor(selectedStatus)}22` : 'rgba(37,99,235,0.12)',
+          },
+          text: {
+            color: theme.text,
+            fontWeight: '800',
+          },
+        },
+      };
+    }
+
+    return marks;
+  }, [byDate, consideredDays, currentMonthKey, daysInMonth, isCurrentMonth, selectedDate, theme.text]);
 
   if (loading && !targetProfile) {
     return (
@@ -324,44 +380,73 @@ export default function AttendanceDetailByMemberScreen() {
 
       <ThemedView style={[styles.calendarCard, { borderColor: theme.icon }]}> 
         <ThemedText type="subtitle">Calendar</ThemedText>
-        <View style={styles.weekHeaderRow}>
-          {WEEK_DAYS.map((w) => (
-            <ThemedText key={w} style={styles.weekCell}>
-              {w}
+        {customCalendarHidden ? (
+          <View style={styles.calendarWrapper}>
+            <Calendar
+              current={`${currentMonthKey}-01`}
+              enableSwipeMonths
+              markingType="custom"
+              onMonthChange={(m) => {
+                setMonth(m.month);
+                setYear(m.year);
+              }}
+              onDayPress={(day) => {
+                setSelectedDate(day.dateString);
+              }}
+              markedDates={markedDates}
+              theme={{
+                todayTextColor: '#2563eb',
+                monthTextColor: theme.text,
+                textDayHeaderFontWeight: '700',
+              }}
+            />
+
+            <ThemedText style={styles.calendarSelectedText}>
+              {selectedDate ? `Selected: ${selectedDate}` : 'Tap a date to select'}
             </ThemedText>
-          ))}
-        </View>
+          </View>
+        ) : (
+          <View style={styles.calendarLegacyWrap}>
+            <View style={styles.weekHeaderRow}>
+              {WEEK_DAYS.map((w) => (
+                <ThemedText key={w} style={styles.weekCell}>
+                  {w}
+                </ThemedText>
+              ))}
+            </View>
 
-        <View style={styles.calendarGrid}>
-          {Array.from({ length: firstWeekday }).map((_, i) => (
-            <View key={`pad-${String(i)}`} style={styles.dayCell} />
-          ))}
+            <View style={styles.calendarGrid}>
+              {Array.from({ length: firstWeekday }).map((_, i) => (
+                <View key={`pad-${String(i)}`} style={styles.dayCell} />
+              ))}
 
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1;
-            const key = new Date(year, month - 1, day).toISOString().slice(0, 10);
-            const status = byDate.get(key);
-            const disabled = isCurrentMonth && day > consideredDays;
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1;
+                const key = new Date(year, month - 1, day).toISOString().slice(0, 10);
+                const status = byDate.get(key);
+                const disabled = isCurrentMonth && day > consideredDays;
 
-            return (
-              <View
-                key={key}
-                style={[
-                  styles.dayCell,
-                  styles.dayBox,
-                  { borderColor: statusColor(status), opacity: disabled ? 0.45 : 1 },
-                ]}>
-                <ThemedText style={styles.dayNumber}>{day}</ThemedText>
-                {!disabled && <View style={[styles.statusDot, { backgroundColor: statusColor(status) }]} />}
-                {!disabled && (
-                  <ThemedText style={styles.dayStatusText}>
-                    {status ? status.slice(0, 1).toUpperCase() : 'U'}
-                  </ThemedText>
-                )}
-              </View>
-            );
-          })}
-        </View>
+                return (
+                  <View
+                    key={key}
+                    style={[
+                      styles.dayCell,
+                      styles.dayBox,
+                      { borderColor: statusColor(status), opacity: disabled ? 0.45 : 1 },
+                    ]}>
+                    <ThemedText style={styles.dayNumber}>{day}</ThemedText>
+                    {!disabled && <View style={[styles.statusDot, { backgroundColor: statusColor(status) }]} />}
+                    {!disabled && (
+                      <ThemedText style={styles.dayStatusText}>
+                        {status ? status.slice(0, 1).toUpperCase() : 'U'}
+                      </ThemedText>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
@@ -505,6 +590,23 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     gap: 10,
+  },
+  calendarWrapper: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(37, 99, 235, 0.18)',
+    backgroundColor: 'rgba(255,255,255,0.96)',
+  },
+  calendarSelectedText: {
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '700',
+    opacity: 0.72,
+    paddingVertical: 10,
+  },
+  calendarLegacyWrap: {
+    display: 'none',
   },
   weekHeaderRow: {
     flexDirection: 'row',

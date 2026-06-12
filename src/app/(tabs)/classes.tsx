@@ -22,7 +22,7 @@ import { useAuthStore } from '@/src/store/auth.store';
 import { Subject } from '@/src/types';
 
 
-type IdLabel = { _id: string; name: string };
+type IdLabel = { _id: string; name: string; subtitle?: string };
 
 interface ClassItem {
   _id: string;
@@ -45,10 +45,34 @@ interface TeacherItem {
   user?: { _id: string; name?: string; email?: string };
 }
 
+const getSubjectSubtitle = (subject: Subject) => {
+  const className = typeof subject.class === 'object' ? subject.class?.name : subject.class;
+  const teacherName =
+    typeof subject.teacher === 'object'
+      ? subject.teacher?.name || undefined
+      : subject.teacher;
+
+  const parts = [
+    subject.code ? `Code: ${subject.code}` : '',
+    className ? `Class: ${className}` : '',
+    teacherName ? `Teacher: ${teacherName}` : '',
+    typeof subject.maxMarks === 'number' ? `Max Marks: ${subject.maxMarks}` : '',
+  ].filter(Boolean);
+
+  return parts.join(' • ');
+};
+
 export default function ClassesTab() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const isDark = colorScheme === 'dark';
+  const cardBg = isDark ? '#111827' : '#FFFFFF';
+  const surfaceBg = isDark ? '#0B1220' : '#F9FAFB';
+  const textColor = isDark ? '#F9FAFB' : '#111827';
+  const mutedColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#334155' : '#D1D5DB';
+  const addClassButtonBg = isDark ? '#2563EB' : theme.tint;
   const user = useAuthStore((state) => state.user);
   const role = typeof user?.role === 'string' ? user.role : user?.role?.role;
   const isAdmin = role === 'admin';
@@ -60,7 +84,7 @@ export default function ClassesTab() {
 
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [teachers, setTeachers] = useState<TeacherItem[]>([]);
-  const [subjects, setSubjects] = useState<Array<{ _id: string; name?: string }>>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
 
   const [newClassName, setNewClassName] = useState('');
   const [newClassGrade, setNewClassGrade] = useState('');
@@ -171,13 +195,19 @@ export default function ClassesTab() {
 
   const subjectOptions: IdLabel[] = useMemo(() => {
     const map = new Map<string, string>();
+    const subtitleMap = new Map<string, string>();
 
-     subjects.forEach((subject) => {
+    subjects.forEach((subject) => {
         if (subject._id && subject.name) {
           map.set(subject._id, subject.name);
+          subtitleMap.set(subject._id, getSubjectSubtitle(subject));
         }
       });
-    return Array.from(map.entries()).map(([id, name]) => ({ _id: id, name }));
+    return Array.from(map.entries()).map(([id, name]) => ({
+      _id: id,
+      name,
+      subtitle: subtitleMap.get(id),
+    }));
   }, [subjects]);
 
   const createClass = async () => {
@@ -309,7 +339,14 @@ export default function ClassesTab() {
       <Pressable
         style={[styles.dropdownButton, { borderColor: theme.icon, backgroundColor: theme.background }]}
         onPress={() => openPicker(title, options, value, onPick)}>
-        <ThemedText style={styles.dropdownText}>{selectedLabel}</ThemedText>
+        <View style={styles.dropdownLabelWrap}>
+          <ThemedText style={styles.dropdownText}>{selectedLabel}</ThemedText>
+          {options.find((item) => item._id === value)?.subtitle ? (
+            <ThemedText style={styles.dropdownSubtitle} numberOfLines={1}>
+              {options.find((item) => item._id === value)?.subtitle}
+            </ThemedText>
+          ) : null}
+        </View>
         <ThemedText style={styles.dropdownArrow}>⌄</ThemedText>
       </Pressable>
     );
@@ -325,7 +362,7 @@ export default function ClassesTab() {
 
   return (
     <ScrollView 
-      style={styles.container} 
+      style={[styles.container, { backgroundColor: theme.background }]} 
       contentContainerStyle={styles.content}
       refreshControl={
         <RefreshControl
@@ -341,27 +378,55 @@ export default function ClassesTab() {
         </ThemedView>
       ) : null}
 
+      <ThemedView style={[styles.section, { borderColor, backgroundColor: cardBg }]}> 
+        <ThemedText type="subtitle">All Classes</ThemedText>
+        {classes.length === 0 ? (
+          <ThemedText style={[styles.mutedText, { color: mutedColor }]}>No classes found</ThemedText>
+        ) : (
+          <FlatList
+            data={classes}
+            horizontal={true}
+            keyExtractor={(cls) => cls._id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.classListContainer}
+            renderItem={({ item: cls }) => (
+              <Pressable
+                onPress={() => router.push(`/class-details/${cls._id}`)}
+                style={[styles.classCard, { borderColor, backgroundColor: cardBg }]}>
+                <ThemedText type="defaultSemiBold" style={{ color: textColor }}>
+                  {cls.name}{cls.section ? ` (${cls.section})` : ''}
+                </ThemedText>
+                <ThemedText style={[styles.mutedText, { color: mutedColor }]}>Grade: {cls.grade || 'N/A'} | Room: {cls.room || 'N/A'}</ThemedText>
+                <ThemedText style={[styles.mutedText, { color: mutedColor }]}>Students: {cls.studentCount || 0}</ThemedText>
+                <ThemedText style={[styles.mutedText, { color: mutedColor }]}>Teacher: {cls.classTeacher?.user?.name || 'Not assigned'}</ThemedText>
+                <ThemedText style={[styles.mutedText, { color: mutedColor }]}>Subjects: {(cls.subjects || []).map((s) => s.name).filter(Boolean).join(', ') || 'None'}</ThemedText>
+              </Pressable>
+            )}
+          />
+        )}
+      </ThemedView>
+
       {isAdmin ? (
         <>
-          <ThemedView style={[styles.section, { borderColor: theme.icon }]}> 
+          <ThemedView style={[styles.section, { borderColor, backgroundColor: cardBg }]}> 
             <ThemedText type="subtitle">Add New Class</ThemedText>
             <ThemedText style={styles.inputLabel}>Class Name</ThemedText>
-            <TextInput placeholder="Class Name" placeholderTextColor="#8c8c8c" style={styles.input} value={newClassName} onChangeText={setNewClassName} />
+            <TextInput placeholder="Class Name" placeholderTextColor={mutedColor} selectionColor={theme.tint} style={[styles.input, { color: textColor, backgroundColor: surfaceBg, borderColor }]} value={newClassName} onChangeText={setNewClassName} />
             <ThemedText style={styles.inputLabel}>Grade</ThemedText>
-            <TextInput placeholder="Grade" placeholderTextColor="#8c8c8c" style={styles.input} value={newClassGrade} onChangeText={setNewClassGrade} />
+            <TextInput placeholder="Grade" placeholderTextColor={mutedColor} selectionColor={theme.tint} style={[styles.input, { color: textColor, backgroundColor: surfaceBg, borderColor }]} value={newClassGrade} onChangeText={setNewClassGrade} />
             <ThemedText style={styles.inputLabel}>Section</ThemedText>
-            <TextInput placeholder="Section" placeholderTextColor="#8c8c8c" style={styles.input} value={newClassSection} onChangeText={setNewClassSection} />
+            <TextInput placeholder="Section" placeholderTextColor={mutedColor} selectionColor={theme.tint} style={[styles.input, { color: textColor, backgroundColor: surfaceBg, borderColor }]} value={newClassSection} onChangeText={setNewClassSection} />
             <ThemedText style={styles.inputLabel}>Capacity</ThemedText>
-            <TextInput placeholder="Capacity" placeholderTextColor="#8c8c8c" style={styles.input} keyboardType="numeric" value={newClassCapacity} onChangeText={setNewClassCapacity} />
+            <TextInput placeholder="Capacity" placeholderTextColor={mutedColor} selectionColor={theme.tint} style={[styles.input, { color: textColor, backgroundColor: surfaceBg, borderColor }]} keyboardType="numeric" value={newClassCapacity} onChangeText={setNewClassCapacity} />
             <ThemedText style={styles.inputLabel}>Room</ThemedText>
-            <TextInput placeholder="Room" placeholderTextColor="#8c8c8c" style={styles.input} value={newClassRoom} onChangeText={setNewClassRoom} />
-            <Pressable style={[styles.actionButton, { backgroundColor: theme.tint }]} onPress={createClass} disabled={saving}>
+            <TextInput placeholder="Room" placeholderTextColor={mutedColor} selectionColor={theme.tint} style={[styles.input, { color: textColor, backgroundColor: surfaceBg, borderColor }]} value={newClassRoom} onChangeText={setNewClassRoom} />
+            <Pressable style={[styles.actionButton, { backgroundColor: addClassButtonBg }]} onPress={createClass} disabled={saving}>
               <ThemedText style={styles.actionText}>{saving ? 'Saving...' : 'Create Class'}</ThemedText>
             </Pressable>
           </ThemedView>
 
-          <ThemedView style={[styles.section, { borderColor: theme.icon }]}> 
-            <ThemedText type="subtitle">Assign Teacher to Class</ThemedText>
+          <ThemedView style={[styles.section, { borderColor, backgroundColor: cardBg }]}> 
+            <ThemedText type="subtitle">Add Class Teacher</ThemedText>
             <ThemedText style={styles.label}>Select Class</ThemedText>
             {renderDropdown('Select Class', classOptions, selectedClassForTeacher, setSelectedClassForTeacher, 'Select class')}
             <ThemedText style={styles.label}>Select Teacher</ThemedText>
@@ -371,14 +436,14 @@ export default function ClassesTab() {
             </Pressable>
           </ThemedView>
 
-          <ThemedView style={[styles.section, { borderColor: theme.icon }]}> 
+          <ThemedView style={[styles.section, { borderColor, backgroundColor: cardBg }]}> 
             <ThemedText type="subtitle">Add Subject in Class</ThemedText>
             <ThemedText style={styles.inputLabel}>Subject Name</ThemedText>
-            <TextInput placeholder="Subject Name" placeholderTextColor="#8c8c8c" style={styles.input} value={subjectName} onChangeText={setSubjectName} />
+            <TextInput placeholder="Subject Name" placeholderTextColor={mutedColor} selectionColor={theme.tint} style={[styles.input, { color: textColor, backgroundColor: surfaceBg, borderColor }]} value={subjectName} onChangeText={setSubjectName} />
             <ThemedText style={styles.inputLabel}>Subject Code</ThemedText>
-            <TextInput placeholder="Subject Code" placeholderTextColor="#8c8c8c" style={styles.input} value={subjectCode} onChangeText={setSubjectCode} />
+            <TextInput placeholder="Subject Code" placeholderTextColor={mutedColor} selectionColor={theme.tint} style={[styles.input, { color: textColor, backgroundColor: surfaceBg, borderColor }]} value={subjectCode} onChangeText={setSubjectCode} />
             <ThemedText style={styles.inputLabel}>Maximum Marks</ThemedText>
-            <TextInput placeholder="Max Marks" placeholderTextColor="#8c8c8c" style={styles.input} keyboardType="numeric" value={subjectMaxMarks} onChangeText={setSubjectMaxMarks} />
+            <TextInput placeholder="Max Marks" placeholderTextColor={mutedColor} selectionColor={theme.tint} style={[styles.input, { color: textColor, backgroundColor: surfaceBg, borderColor }]} keyboardType="numeric" value={subjectMaxMarks} onChangeText={setSubjectMaxMarks} />
             <ThemedText style={styles.label}>Select Class</ThemedText>
             {renderDropdown('Select Class', classOptions, selectedClassForSubject, setSelectedClassForSubject, 'Select class')}
             <ThemedText style={styles.label}>Select Teacher</ThemedText>
@@ -388,7 +453,7 @@ export default function ClassesTab() {
             </Pressable>
           </ThemedView>
 
-          <ThemedView style={[styles.section, { borderColor: theme.icon }]}> 
+          <ThemedView style={[styles.section, { borderColor, backgroundColor: cardBg }]}> 
             <ThemedText type="subtitle">Assign Existing Subject to Class</ThemedText>
             <ThemedText style={styles.label}>Select Subject</ThemedText>
             {renderDropdown('Select Subject', subjectOptions, selectedExistingSubject, setSelectedExistingSubject, 'Select subject')}
@@ -403,8 +468,8 @@ export default function ClassesTab() {
 
       <Modal visible={!!pickerState} transparent animationType="fade" onRequestClose={closePicker}>
         <Pressable style={styles.modalOverlay} onPress={closePicker}>
-          <Pressable style={[styles.modalCard, { backgroundColor: theme.background }]} onPress={() => undefined}>
-            <ThemedText type="subtitle">{pickerState?.title}</ThemedText>
+          <Pressable style={[styles.modalCard, { backgroundColor: cardBg }]} onPress={() => undefined}>
+            <ThemedText type="subtitle" style={{ color: textColor }}>{pickerState?.title}</ThemedText>
             {pickerState?.options.length ? (
               <FlatList
                 data={pickerState.options}
@@ -421,7 +486,12 @@ export default function ClassesTab() {
                         pickerState.onPick(item._id);
                         closePicker();
                       }}>
-                      <ThemedText style={[styles.modalItemText, selected && styles.modalItemTextSelected]}>{item.name}</ThemedText>
+                      <ThemedText style={[styles.modalItemText, { color: textColor }, selected && styles.modalItemTextSelected]}>{item.name}</ThemedText>
+                      {item.subtitle ? (
+                        <ThemedText style={[styles.modalItemSubtitle, { color: mutedColor }, selected && styles.modalItemTextSelected]} numberOfLines={2}>
+                          {item.subtitle}
+                        </ThemedText>
+                      ) : null}
                     </Pressable>
                   );
                 }}
@@ -432,36 +502,6 @@ export default function ClassesTab() {
           </Pressable>
         </Pressable>
       </Modal>
-
-      <ThemedView style={[styles.section, { borderColor: theme.icon }]}> 
-        <ThemedText type="subtitle">All Classes</ThemedText>
-        {classes.length === 0 ? (
-          <ThemedText style={styles.mutedText}>No classes found</ThemedText>
-        ) : (
-          <FlatList
-            data={classes}
-            horizontal={true}
-            keyExtractor={(cls) => cls._id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.classListContainer}
-            renderItem={({ item: cls }) => (
-              <Pressable
-                onPress={() => router.push(`/class-details/${cls._id}`)}
-                style={[styles.classCard, { borderColor: theme.icon, backgroundColor: theme.background }]}>
-                <ThemedText type="defaultSemiBold">{cls.name}{cls.section ? ` (${cls.section})` : ''}</ThemedText>
-                <ThemedText style={styles.mutedText}>Grade: {cls.grade || 'N/A'} | Room: {cls.room || 'N/A'}</ThemedText>
-                <ThemedText style={styles.mutedText}>Students: {cls.studentCount || 0}</ThemedText>
-                <ThemedText style={styles.mutedText}>
-                  Teacher: {cls.classTeacher?.user?.name || 'Not assigned'}
-                </ThemedText>
-                <ThemedText style={styles.mutedText}>
-                  Subjects: {(cls.subjects || []).map((s) => s.name).filter(Boolean).join(', ') || 'None'}
-                </ThemedText>
-              </Pressable>
-            )}
-          />
-        )}
-      </ThemedView>
     </ScrollView>
   );
 }
@@ -583,7 +623,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     gap: 10,
-    backgroundColor: '#FFFFFF',
     elevation: 4,
   },
 
@@ -593,7 +632,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    backgroundColor: '#F9FAFB',
   },
 
   actionButton: {
@@ -638,6 +676,14 @@ const styles = StyleSheet.create({
   dropdownText: {
     flex: 1,
   },
+  dropdownLabelWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  dropdownSubtitle: {
+    fontSize: 11,
+    opacity: 0.7,
+  },
   dropdownArrow: {
     fontSize: 18,
     marginLeft: 8,
@@ -664,23 +710,33 @@ const styles = StyleSheet.create({
   modalItemText: {
     fontWeight: '600',
   },
+  modalItemSubtitle: {
+    marginTop: 4,
+    fontSize: 11,
+    opacity: 0.75,
+  },
   modalItemTextSelected: {
     color: '#fff',
   },
 
   classListContainer: {
     paddingRight: 16,
-    gap: 12,
+    gap: 10,
   },
 
   classCard: {
-    borderRadius: 16,
-    padding: 14,
-    width: 280,
-    minWidth: 280,
-    gap: 6,
-    backgroundColor: '#FFFFFF',
-    elevation: 4,
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    width: 248,
+    minWidth: 248,
+    gap: 5,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
 
   mutedText: {

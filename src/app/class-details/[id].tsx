@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, View } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, View, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 
 import { apiService } from '@/api/client';
@@ -31,6 +31,7 @@ export default function ClassDetailsScreen() {
   const [classData, setClassData] = useState<Class | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
   const router = useRouter();
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
@@ -45,18 +46,31 @@ export default function ClassDetailsScreen() {
   useEffect(() => {
     if (classData) {
       navigation.setOptions({
-        title: `${classData.name} - Students`,
+        title: `${classData.name}${classData.section ? ` (${classData.section})` : ''} - Students`,
       });
     }
   }, [classData, navigation]);
+
+  const filteredStudents = (classData?.students || []).filter((s) => {
+    if (!query) return true;
+    const q = query.trim().toLowerCase();
+    return (
+      (s.name || '').toLowerCase().includes(q) ||
+      (s.email || '').toLowerCase().includes(q) ||
+      (s.phone || '').toLowerCase().includes(q) ||
+      (s.rollNumber || '').toLowerCase().includes(q)
+    );
+  });
 
   const fetchClassDetails = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await apiService.getClassById(id as string);
-      if (response.success) {
-        setClassData(response.data);
+      if (response.success && response.data) {
+        setClassData(response.data as Class);
+      } else {
+        setClassData(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch class details');
@@ -134,10 +148,10 @@ export default function ClassDetailsScreen() {
     <ThemedView style={styles.container}>
       {/* Class Info Header */}
       <ThemedView style={styles.header}>
-        <ThemedText type="title">{classData.name}</ThemedText>
-        {classData.section && (
-          <ThemedText style={styles.section}>Section: {classData.section}</ThemedText>
-        )}
+        {/* <ThemedText type="title">
+          {classData.name}
+          {classData.section ? ` (${classData.section})` : ''}
+        </ThemedText> */}
         {classData.classTeacher && (
           <ThemedText style={styles.teacher}>
             👨‍🏫 Class Teacher: {classData.classTeacher.name}
@@ -148,14 +162,25 @@ export default function ClassDetailsScreen() {
         </ThemedText>
       </ThemedView>
 
+      {/* Search */}
+      <ThemedView style={styles.searchWrap}>
+        <TextInput
+          placeholder="Search students by name, email, phone or roll"
+          placeholderTextColor="#8c8c8c"
+          value={query}
+          onChangeText={setQuery}
+          style={styles.searchInput}
+        />
+      </ThemedView>
+
       {/* Students List */}
-      {classData.students && classData.students.length === 0 ? (
+      {filteredStudents && filteredStudents.length === 0 ? (
         <ThemedView style={styles.emptyContainer}>
-          <ThemedText>No students enrolled in this class</ThemedText>
+          <ThemedText>No students match your search</ThemedText>
         </ThemedView>
       ) : (
         <FlatList
-          data={classData.students}
+          data={filteredStudents}
           renderItem={renderStudentItem}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
@@ -196,6 +221,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',
+  },
+  searchWrap: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
   },
   studentContent: {
     padding: 16,

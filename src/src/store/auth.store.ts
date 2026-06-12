@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '@/src/constants';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { apiService } from '@/api/client';
-import { LoginCredentials, User, UserRole } from '@/src/types';
+import { LoginCredentials, User, UserRole,OTPLoginCredentials } from '@/src/types';
+import { registerSessionClearHandler } from '../services/sessionManager';
 
 interface AuthState {
   user: User | null;
@@ -12,7 +14,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   willExpire: number | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: OTPLoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   setAuth: (payload: { user: User; accessToken: string; refreshToken: string }) => void;
   clearAuth: () => void;
@@ -37,6 +39,7 @@ export const useAuthStore = create<AuthState>()(
       willExpire: 0,
 
       setAuth: ({ user, accessToken, refreshToken }) => {
+        console.log('Setting auth state with user:', user);
         set({
           user: {
             ...user,
@@ -61,12 +64,20 @@ export const useAuthStore = create<AuthState>()(
           willExpire: 0,
           isLoading: false,
         });
+        // Remove legacy keys too
+        try {
+          AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+          AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+          AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        } catch (e) {
+          // ignore
+        }
       },
 
-      login: async ({ username, password }) => {
+      login: async ({ token, code }) => {
         set({ isLoading: true });
         try {
-          const response = await apiService.login(username, password);
+          const response = await apiService.verifyOtp(token, code);
           if (!response.success || !response.data) {
             throw new Error(response.msg || 'Login failed');
           }
@@ -80,7 +91,7 @@ export const useAuthStore = create<AuthState>()(
             role: data.role?.role || 'admin',
             image: data.user?.image,
             school: data.school,
-            willExpire: Date.now() + 60 * 60 * 1000, // Example: token expires in 60 minutes
+            willExpire: Date.now() + 60 * 60 * 1000 * 24 * 20, // Example: token expires in 20 days, adjust as needed
           };
 
           set({
@@ -89,8 +100,9 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: data.refreshToken,
             isAuthenticated: true,
             isLoading: false,
-            willExpire: Date.now() + 60 * 60 * 1000,
+            willExpire: Date.now() + 60 * 60 * 1000 * 24* 20,
           });
+          console.log('Login successful, user:', user);
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -105,7 +117,7 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch {
           // Ignore logout API errors and clear local session anyway.
-          console.warn('Logout API call failed, clearing local session anyway.');
+          console.error('Logout API call failed, clearing local session anyway.');
         }
 
         set({
@@ -131,3 +143,7 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
+registerSessionClearHandler(() => {
+  useAuthStore.getState().clearAuth();
+});

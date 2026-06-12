@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { apiService } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import AddressLookupField from '@/components/forms/AddressLookupField';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/src/store/auth.store';
@@ -32,6 +33,15 @@ export default function ProfileScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const isDark = colorScheme === 'dark';
+  const cardBg = isDark ? '#111827' : '#FFFFFF';
+  const surfaceBg = isDark ? '#0B1220' : '#F9FAFB';
+  const textColor = isDark ? '#F9FAFB' : '#111827';
+  const mutedColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#334155' : '#D1D5DB';
+  const primaryButtonBg = isDark ? '#2563EB' : theme.tint;
+  const secondaryButtonBg = isDark ? 'rgba(37, 99, 235, 0.14)' : 'transparent';
+  const logoutButtonBg = isDark ? 'rgba(217, 48, 37, 0.14)' : 'transparent';
 
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -256,8 +266,9 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ThemedView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}>
         <View style={styles.avatarWrap}>
           {profileImage ? (
             <Image source={{ uri: profileImage }} style={styles.avatarImage} resizeMode="cover" />
@@ -268,7 +279,7 @@ export default function ProfileScreen() {
           )}
 
           <TouchableOpacity
-            style={[styles.changePhotoBtn, { borderColor: theme.tint }]}
+            style={[styles.changePhotoBtn, { borderColor: theme.tint, backgroundColor: isDark ? 'rgba(37, 99, 235, 0.14)' : 'transparent' }]}
             disabled={uploadingImage}
             onPress={handleSelectProfileImage}>
             {uploadingImage ? (
@@ -284,9 +295,9 @@ export default function ProfileScreen() {
           <TextInput
             value={form.name}
             onChangeText={(v) => updateField('name', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
+            style={[styles.input, { borderColor, backgroundColor: surfaceBg, color: textColor }]}
             placeholder="Enter name"
-            placeholderTextColor={theme.tabIconDefault}
+            placeholderTextColor={mutedColor}
           />
         </View>
 
@@ -295,60 +306,29 @@ export default function ProfileScreen() {
           <TextInput
             value={form.phone}
             onChangeText={(v) => updateField('phone', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
+            style={[styles.input, { borderColor, backgroundColor: surfaceBg, color: textColor }]}
             placeholder="Enter phone"
             keyboardType="phone-pad"
-            placeholderTextColor={theme.tabIconDefault}
+            placeholderTextColor={mutedColor}
           />
         </View>
 
-        <View style={styles.fieldWrap}>
-          <ThemedText style={styles.label}>Address</ThemedText>
-          <TextInput
-            value={form.address}
-            onChangeText={(v) => updateField('address', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
-            placeholder="Enter address"
-            placeholderTextColor={theme.tabIconDefault}
+        <ThemedView style={styles.addressSection}>
+          <ThemedText style={styles.sectionLabel}>Address</ThemedText>
+          <AddressLookupField
+            address={form.address}
+            setAddress={(value) => updateField('address', value)}
+            pincode={form.pinCode}
+            setPincode={(value) => updateField('pinCode', value)}
+            city={form.city}
+            setCity={(value) => updateField('city', value)}
+            state={form.state}
+            setState={(value) => updateField('state', value)}
           />
-        </View>
-
-        <View style={styles.fieldWrap}>
-          <ThemedText style={styles.label}>City</ThemedText>
-          <TextInput
-            value={form.city}
-            onChangeText={(v) => updateField('city', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
-            placeholder="Enter city"
-            placeholderTextColor={theme.tabIconDefault}
-          />
-        </View>
-
-        <View style={styles.fieldWrap}>
-          <ThemedText style={styles.label}>State</ThemedText>
-          <TextInput
-            value={form.state}
-            onChangeText={(v) => updateField('state', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
-            placeholder="Enter state"
-            placeholderTextColor={theme.tabIconDefault}
-          />
-        </View>
-
-        <View style={styles.fieldWrap}>
-          <ThemedText style={styles.label}>Pin Code</ThemedText>
-          <TextInput
-            value={form.pinCode}
-            onChangeText={(v) => updateField('pinCode', v)}
-            style={[styles.input, { borderColor: theme.tabIconDefault, color: theme.text }]}
-            placeholder="Enter pin code"
-            keyboardType="numeric"
-            placeholderTextColor={theme.tabIconDefault}
-          />
-        </View>
+        </ThemedView>
 
         <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: saving ? theme.tabIconDefault : theme.tint }]}
+          style={[styles.actionBtn, { backgroundColor: saving ? (isDark ? '#475569' : theme.tabIconDefault) : primaryButtonBg }]}
           disabled={saving}
           onPress={handleUpdate}>
           {saving ? (
@@ -359,7 +339,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.secondaryBtn, { borderColor: theme.tint }]}
+          style={[styles.secondaryBtn, { borderColor: theme.tint, backgroundColor: secondaryButtonBg }]}
           onPress={() => {
             if (user?._id) {
               router.push({ pathname: '/attdence-detail/[id]', params: { id: user._id } });
@@ -369,7 +349,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.logoutBtn, { borderColor: '#d93025' }]}
+          style={[styles.logoutBtn, { borderColor: '#d93025', backgroundColor: logoutButtonBg }]}
           onPress={handleLogout}>
           <ThemedText style={styles.logoutText}>Logout</ThemedText>
         </TouchableOpacity>
@@ -379,6 +359,9 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  keyboardContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -429,10 +412,19 @@ const styles = StyleSheet.create({
   fieldWrap: {
     marginBottom: 12,
   },
+  addressSection: {
+    marginBottom: 12,
+    gap: 8,
+  },
   label: {
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 5,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 0,
   },
   input: {
     borderWidth: 1,

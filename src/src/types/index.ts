@@ -6,6 +6,7 @@ export interface User {
   phone?: string;
   role: UserRole | { _id: string; role: UserRole };
   image?: string;
+  pushTokens?: string[];
   school?: string | { _id: string; schoolName: string };
   createdAt?: string;
   updatedAt?: string;
@@ -108,10 +109,20 @@ export interface Notice {
 export interface LeaveRequest {
   _id: string;
   userId?: string | { _id: string; name?: string; email?: string; role?: UserRole | { role?: UserRole } };
+  applicantUser?: {
+    _id: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+    role?: UserRole | { role?: UserRole };
+    image?: string;
+  } | string;
   school?: string;
   startDate: string;
   endDate: string;
-  reason: string;
+  reason?: string;
+  purpose?: string;
+  leaveType?: string;
   status: 'pending' | 'approved' | 'declined';
   reviewRemark?: string;
   reviewedBy?: string | { _id: string; name?: string };
@@ -327,6 +338,11 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface OTPLoginCredentials {
+  token: string;
+  code: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
   _id: string;
@@ -354,6 +370,68 @@ export interface PaginatedResponse<T> {
   pages: number;
 }
 
+export interface BroadcastAudiencePayload {
+  userIds?: string[];
+  roleNames?: string[];
+  classIds?: string[];
+}
+
+export interface BroadcastPreviewRecipient {
+  _id: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+}
+
+export interface BroadcastPreviewResponse {
+  count: number;
+  recipients: BroadcastPreviewRecipient[];
+}
+
+export interface BroadcastSummary {
+  total?: number;
+  sent?: number;
+  failed?: number;
+  skipped?: number;
+}
+
+export interface BroadcastHistoryItem {
+  _id: string;
+  title?: string;
+  subject?: string;
+  message?: string;
+  channels?: string[];
+  status?: string;
+  recipientCount?: number;
+  createdAt?: string;
+  deliverySummary?: BroadcastSummary;
+}
+
+export interface BroadcastDelivery {
+  _id: string;
+  createdFor?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  channel?: string;
+  destination?: string;
+  status?: string;
+  provider?: string;
+  sentAt?: string;
+  createdAt?: string;
+  errorMessage?: string;
+}
+
+export interface BroadcastSendPayload extends BroadcastAudiencePayload {
+  title: string;
+  subject?: string;
+  message: string;
+  channels: string[];
+}
+
 // Progress Types
 export type ProgressType = 'exam' | 'assignment' | 'quiz' | 'project';
 
@@ -362,3 +440,5 @@ export type NoticeType = 'general' | 'important' | 'event' | 'announcement';
 export type ComplaintStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
 export type ComplaintPriority = 'low' | 'medium' | 'high';
 export type FeeStatus = 'pending' | 'paid' | 'overdue';
+
+export * from './messaging';
