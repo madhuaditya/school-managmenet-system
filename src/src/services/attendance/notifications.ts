@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { logError } from '../logger';
 
 const CHANNEL_ID = 'attendance-sync';
 
@@ -48,6 +49,7 @@ export const notifyAttendanceSyncing = async () => {
       trigger: null,
     });
   } catch (error) {
+    await logError(error);
     console.error('Attendance syncing notification failed:', error);
   }
 };
@@ -67,6 +69,7 @@ export const notifyAttendanceSynced = async () => {
       trigger: null,
     });
   } catch (error) {
+    await logError(error);
     console.error('Attendance synced notification failed:', error);
   }
 };
@@ -86,6 +89,7 @@ export const notifyAttendanceRetryScheduled = async () => {
       trigger: null,
     });
   } catch (error) {
+    await logError(error);
     console.error('Attendance retry notification failed:', error);
   }
 };

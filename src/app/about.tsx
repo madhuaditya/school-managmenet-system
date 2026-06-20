@@ -14,42 +14,59 @@ export default function AboutScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { backgroundColor: theme.background, borderColor: theme.icon }]}>
-          <ThemedText type="title">About Us</ThemedText>
+
+        {/* HERO */}
+        <View style={styles.hero}>
+          <View style={styles.heroAccent} />
+          <ThemedText type="title" style={styles.title}>
+            About Us
+          </ThemedText>
+
           <ThemedText style={styles.lead}>
-            {BRAND.name} is designed to simplify everyday school operations while keeping data handling practical,
-            responsible, and transparent.
+            {BRAND.name} simplifies school operations with a clean, practical, and transparent system designed for real usage.
           </ThemedText>
         </View>
 
+        {/* GRID */}
         <View style={styles.grid}>
-          <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.icon }]}>
-            <ThemedText type="defaultSemiBold">How We Handle Data</ThemedText>
+          <View style={styles.card}>
+            <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+              How We Handle Data
+            </ThemedText>
             <ThemedText style={styles.text}>{ABOUT_CONTENT.dataHandling}</ThemedText>
           </View>
 
-          <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.icon }]}>
-            <ThemedText type="defaultSemiBold">Our Goal</ThemedText>
+          <View style={styles.card}>
+            <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+              Our Goal
+            </ThemedText>
             <ThemedText style={styles.text}>{ABOUT_CONTENT.goal}</ThemedText>
           </View>
 
-          <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.icon }]}>
-            <ThemedText type="defaultSemiBold">School Efficiency Impact</ThemedText>
+          <View style={styles.card}>
+            <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+              School Efficiency Impact
+            </ThemedText>
             <ThemedText style={styles.text}>{ABOUT_CONTENT.efficiency}</ThemedText>
           </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.icon }]}>
-          <ThemedText type="defaultSemiBold">Data Security Policy</ThemedText>
+        {/* POLICY */}
+        <View style={styles.card}>
+          <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+            Data Security Policy
+          </ThemedText>
+
           <View style={styles.bulletList}>
             {ABOUT_CONTENT.securityPolicy.map((item) => (
               <View key={item} style={styles.bulletRow}>
-                <View style={[styles.bulletDot, { backgroundColor: theme.tint }]} />
+                <View style={styles.bulletDot} />
                 <ThemedText style={styles.bulletText}>{item}</ThemedText>
               </View>
             ))}
           </View>
         </View>
+
       </ScrollView>
     </ThemedView>
   );
@@ -58,53 +75,98 @@ export default function AboutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F5F5F5',
     paddingHorizontal: 16,
-    paddingTop: 12,
   },
+
   content: {
-    gap: 16,
-    paddingBottom: 24,
+    paddingVertical: 16,
+    gap: 14,
   },
+
+  /* HERO */
   hero: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderRadius: 16,
+    borderColor: '#E6E6E6',
+    borderRadius: 12,
     padding: 16,
-    gap: 12,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  grid: {
-    gap: 12,
+
+  heroAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 4,
+    height: '100%',
+    backgroundColor: '#76ABAE',
   },
-  card: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    gap: 10,
+
+  title: {
+    color: '#303841',
+    marginBottom: 8,
   },
+
   lead: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  text: {
     fontSize: 14,
     lineHeight: 20,
+    color: '#303841',
+    opacity: 0.8,
   },
+
+  /* GRID */
+  grid: {
+    gap: 10,
+  },
+
+  /* CARD */
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E6E6',
+    borderRadius: 10,
+    padding: 14,
+    gap: 8,
+  },
+
+  cardTitle: {
+    color: '#303841',
+  },
+
+  text: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#303841',
+    opacity: 0.85,
+  },
+
+  /* BULLETS */
   bulletList: {
     gap: 10,
+    marginTop: 6,
   },
+
   bulletRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
     gap: 10,
+    alignItems: 'flex-start',
   },
+
   bulletDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     marginTop: 7,
+    backgroundColor: '#76ABAE',
   },
+
   bulletText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#303841',
+    opacity: 0.85,
   },
 });

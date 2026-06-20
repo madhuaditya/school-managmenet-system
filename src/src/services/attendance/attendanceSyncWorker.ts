@@ -5,6 +5,7 @@ import { uploadAttendance } from './attendanceApi';
 import { getRetryDelay } from './retryPolicy';
 import { notifyAttendanceRetryScheduled, notifyAttendanceSynced, notifyAttendanceSyncing } from './notifications';
 import { AttendanceSubmissionPayload } from './types';
+import { logError } from '../logger';
 
 let isSyncing = false;
 
@@ -44,6 +45,7 @@ export const startAttendanceSync = async () => {
 
         await incrementRetry(item.id, retryCount, nextRetryAt);
         await notifyAttendanceRetryScheduled();
+        await logError(error);
         console.error('Attendance sync failed, will retry later:', error);
       }
     }

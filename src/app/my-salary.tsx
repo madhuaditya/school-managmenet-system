@@ -26,6 +26,21 @@ type SalaryHistoryResponseData = {
   pagination: SalaryHistoryPagination;
 };
 
+// --- ERP BRANDING PALETTE ---
+const PALETTE = {
+  primary: '#303841',
+  accent: '#76ABAE',
+  cta: '#FF5722',
+  background: '#F5F5F5',
+  border: '#E6E6E6',
+  surface: '#FFFFFF',
+  textBody: '#5D646B',
+  textHeading: '#303841',
+  success: '#2E7D32',
+  error: '#D32F2F',
+  warning: '#F9A825',
+};
+
 const historyLimitOptions = [10, 20, 50, 100];
 const defaultMonth = new Date().getMonth() + 1;
 const defaultYear = new Date().getFullYear();
@@ -324,7 +339,7 @@ export default function MySalaryScreen() {
               Page {historyPagination.page} of {historyPagination.totalPages} · {historyPagination.totalRecords} records
             </ThemedText>
           </View>
-          {historyLoading ? <ActivityIndicator size="small" color="#2563EB" /> : null}
+        {historyLoading ? <ActivityIndicator size="small" color={PALETTE.accent} /> : null}
         </View>
 
         <View style={styles.paginationRow}>
@@ -393,36 +408,226 @@ export default function MySalaryScreen() {
   );
 }
 
+// const styles = StyleSheet.create({
+//   screen: { flex: 1 },
+//   content: { padding: 16, gap: 12, paddingBottom: 40 },
+//   headerGap: { gap: 12 },
+//   heading: { fontSize: 22, fontWeight: '700' },
+//   helper: { fontSize: 13, lineHeight: 18, color: '#6b7280', marginTop: -4 },
+//   subheading: { fontSize: 16, fontWeight: '700' },
+//   card: { backgroundColor: '#fff', borderRadius: 12, padding: 12, gap: 8, elevation: 3 },
+//   field: { gap: 6 },
+//   label: { fontSize: 12, fontWeight: '700' },
+//   pickerWrap: { borderWidth: 1, borderColor: '#d4d4d8', borderRadius: 10, overflow: 'hidden' },
+//   button: { borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center', marginTop: 4 },
+//   primary: { backgroundColor: '#2563EB' },
+//   secondary: { backgroundColor: '#eef2ff', borderWidth: 1, borderColor: '#c7d2fe' },
+//   disabledButton: { backgroundColor: '#e5e7eb', borderWidth: 1, borderColor: '#d1d5db' },
+//   buttonText: { color: '#fff', fontWeight: '700' },
+//   pagerButtonText: { color: '#1e3a8a', fontWeight: '700' },
+//   item: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, padding: 10, gap: 4 },
+//   itemTitle: { fontWeight: '700' },
+//   historyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
+//   historyLoading: { fontSize: 12, color: '#6b7280', fontWeight: '700' },
+//   historyItem: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, padding: 10, gap: 4 },
+//   historyTopRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, alignItems: 'center' },
+//   historyStatus: { fontSize: 12, fontWeight: '700', color: '#2563EB' },
+//   summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
+//   summaryBox: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, padding: 10, gap: 4, backgroundColor: '#f8fafc' },
+//   inlineList: { gap: 8 },
+//   inlineLabel: { fontSize: 12, fontWeight: '700', color: '#374151' },
+//   historyMeta: { fontSize: 12, color: '#6b7280' },
+//   paginationRow: { flexDirection: 'row', gap: 10 },
+//   pagerButton: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+//   footer: { gap: 10, paddingTop: 4 },
+// });
+
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  content: { padding: 16, gap: 12, paddingBottom: 40 },
-  headerGap: { gap: 12 },
-  heading: { fontSize: 22, fontWeight: '700' },
-  helper: { fontSize: 13, lineHeight: 18, color: '#6b7280', marginTop: -4 },
-  subheading: { fontSize: 16, fontWeight: '700' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 12, gap: 8, elevation: 3 },
-  field: { gap: 6 },
-  label: { fontSize: 12, fontWeight: '700' },
-  pickerWrap: { borderWidth: 1, borderColor: '#d4d4d8', borderRadius: 10, overflow: 'hidden' },
-  button: { borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center', marginTop: 4 },
-  primary: { backgroundColor: '#2563EB' },
-  secondary: { backgroundColor: '#eef2ff', borderWidth: 1, borderColor: '#c7d2fe' },
-  disabledButton: { backgroundColor: '#e5e7eb', borderWidth: 1, borderColor: '#d1d5db' },
-  buttonText: { color: '#fff', fontWeight: '700' },
-  pagerButtonText: { color: '#1e3a8a', fontWeight: '700' },
-  item: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, padding: 10, gap: 4 },
-  itemTitle: { fontWeight: '700' },
-  historyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
-  historyLoading: { fontSize: 12, color: '#6b7280', fontWeight: '700' },
-  historyItem: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, padding: 10, gap: 4 },
-  historyTopRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, alignItems: 'center' },
-  historyStatus: { fontSize: 12, fontWeight: '700', color: '#2563EB' },
-  summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
-  summaryBox: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, padding: 10, gap: 4, backgroundColor: '#f8fafc' },
-  inlineList: { gap: 8 },
-  inlineLabel: { fontSize: 12, fontWeight: '700', color: '#374151' },
-  historyMeta: { fontSize: 12, color: '#6b7280' },
-  paginationRow: { flexDirection: 'row', gap: 10 },
-  pagerButton: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  footer: { gap: 10, paddingTop: 4 },
+  screen: { 
+    flex: 1,
+    backgroundColor: PALETTE.background,
+  },
+  content: { 
+    padding: 16, 
+    gap: 16, 
+    paddingBottom: 50 
+  },
+  headerGap: { 
+    marginBottom: 4 
+  },
+  heading: { 
+    fontSize: 24, 
+    fontWeight: '800',
+    color: PALETTE.textHeading,
+  },
+  helper: { 
+    fontSize: 14, 
+    color: PALETTE.textBody, 
+    marginTop: 4 
+  },
+  subheading: { 
+    fontSize: 16, 
+    fontWeight: '700',
+    color: PALETTE.textHeading,
+  },
+  
+  /* CARDS */
+  card: { 
+    backgroundColor: PALETTE.surface, 
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    borderRadius: 4, 
+    padding: 16, 
+    gap: 12, 
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  
+  /* FIELDS & PICKERS */
+  field: { 
+    gap: 6 
+  },
+  label: { 
+    fontSize: 12, 
+    fontWeight: '600',
+    color: PALETTE.textHeading,
+  },
+  pickerWrap: { 
+    borderWidth: 1, 
+    borderColor: PALETTE.border, 
+    borderRadius: 4, 
+    backgroundColor: PALETTE.background,
+    overflow: 'hidden' 
+  },
+  
+  /* BUTTONS */
+  button: { 
+    borderRadius: 4, 
+    paddingVertical: 10, 
+    paddingHorizontal: 16, 
+    alignItems: 'center', 
+    marginTop: 4 
+  },
+  primary: { 
+    backgroundColor: PALETTE.primary 
+  },
+  secondary: { 
+    backgroundColor: PALETTE.accent, 
+    borderWidth: 1, 
+    borderColor: PALETTE.accent 
+  },
+  disabledButton: { 
+    backgroundColor: PALETTE.border, 
+    borderWidth: 1, 
+    borderColor: PALETTE.border 
+  },
+  buttonText: { 
+    color: PALETTE.surface, 
+    fontWeight: '700' 
+  },
+  pagerButtonText: { 
+    color: PALETTE.surface, 
+    fontWeight: '700' 
+  },
+  
+  /* SUMMARY BOX & ITEMS */
+  summaryHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    gap: 10,
+    marginBottom: 4,
+  },
+  summaryBox: { 
+    borderWidth: 1, 
+    borderColor: PALETTE.border, 
+    borderRadius: 4, 
+    padding: 16, 
+    gap: 8, 
+    backgroundColor: PALETTE.background 
+  },
+  inlineList: { 
+    gap: 12 
+  },
+  inlineLabel: { 
+    fontSize: 14, 
+    fontWeight: '700', 
+    color: PALETTE.textHeading 
+  },
+  item: { 
+    borderWidth: 1, 
+    borderColor: PALETTE.border, 
+    borderRadius: 4, 
+    padding: 16, 
+    gap: 6,
+    backgroundColor: PALETTE.background,
+  },
+  itemTitle: { 
+    fontWeight: '800',
+    color: PALETTE.textHeading,
+    fontSize: 18,
+  },
+
+  /* HISTORY LIST */
+  historyHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    gap: 10 
+  },
+  historyLoading: { 
+    fontSize: 12, 
+    color: PALETTE.textBody, 
+    fontWeight: '600' 
+  },
+  historyMeta: { 
+    fontSize: 13, 
+    color: PALETTE.textBody,
+    marginTop: 4,
+  },
+  historyItem: { 
+    borderWidth: 1, 
+    borderColor: PALETTE.border, 
+    borderRadius: 4, 
+    padding: 16, 
+    gap: 6,
+    backgroundColor: PALETTE.background,
+  },
+  historyTopRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    gap: 10, 
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  historyStatus: { 
+    fontSize: 11, 
+    fontWeight: '700', 
+    color: PALETTE.warning,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    backgroundColor: 'rgba(249, 168, 37, 0.1)',
+    borderColor: 'rgba(249, 168, 37, 0.3)',
+  },
+  
+  /* PAGINATION */
+  paginationRow: { 
+    flexDirection: 'row', 
+    gap: 12 
+  },
+  pagerButton: { 
+    flex: 1, 
+    borderRadius: 4, 
+    paddingVertical: 10, 
+    alignItems: 'center' 
+  },
+  footer: { 
+    gap: 12, 
+    paddingTop: 4 
+  },
 });

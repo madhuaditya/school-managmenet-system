@@ -3,9 +3,10 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 
 import { apiService } from '@/api/client';
+import { logError, logSuccess } from './logger';
 
 const getProjectId = () =>
-   '48f61c07-10ce-4385-93d3-930696c3524f';
+   '2c62f972-d167-443c-b76f-31d8d114cc59';
 
 const isExpoGo = () =>
   Constants.appOwnership === 'expo' || Constants.executionEnvironment === 'storeClient';
@@ -63,19 +64,22 @@ export const registerForPushNotificationsAsync = async (): Promise<string | null
     return null;
   }
 
-  const projectId = '48f61c07-10ce-4385-93d3-930696c3524f';
+  const projectId = '2c62f972-d167-443c-b76f-31d8d114cc59';
 
   try {
-  console.log('Project ID:', projectId);
+  // console.log('Project ID:', projectId);
+  await logSuccess(`Project ID: ${projectId}`);
 
   const tokenResponse = await Notifications.getExpoPushTokenAsync({
     projectId,
   });
 
-  console.log('Expo Push Token Response:', tokenResponse);
+  // console.log('Expo Push Token Response:', tokenResponse);
+  await logSuccess(`Expo Push Token Response: ${JSON.stringify(tokenResponse)}`);
 
   return tokenResponse.data;
 } catch (error) {
+  await logError(error);
   console.error('Failed to get Expo push token:', error);
   return null;
 }

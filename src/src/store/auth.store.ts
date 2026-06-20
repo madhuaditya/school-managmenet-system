@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { apiService } from '@/api/client';
 import { LoginCredentials, User, UserRole,OTPLoginCredentials } from '@/src/types';
 import { registerSessionClearHandler } from '../services/sessionManager';
+import { logError } from '../services/logger';
 
 interface AuthState {
   user: User | null;
@@ -39,7 +40,7 @@ export const useAuthStore = create<AuthState>()(
       willExpire: 0,
 
       setAuth: ({ user, accessToken, refreshToken }) => {
-        console.log('Setting auth state with user:', user);
+        // console.log('Setting auth state with user:', user);
         set({
           user: {
             ...user,
@@ -102,8 +103,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             willExpire: Date.now() + 60 * 60 * 1000 * 24* 20,
           });
-          console.log('Login successful, user:', user);
+          // console.log('Login successful, user:', user);
         } catch (error) {
+          console.error('Login failed:', error);
           set({ isLoading: false });
           throw error;
         }
@@ -115,7 +117,7 @@ export const useAuthStore = create<AuthState>()(
           if (currentRefreshToken) {
             await apiService.logout(currentRefreshToken);
           }
-        } catch {
+        } catch (error) {
           // Ignore logout API errors and clear local session anyway.
           console.error('Logout API call failed, clearing local session anyway.');
         }

@@ -19,23 +19,25 @@ import { LoginCredentials } from '@/src/types';
 import { TextInput as RNTextInput } from 'react-native';
 
 const lightColors = {
-  bg: "#F9FAFB",
-  card: "#FFFFFF",
-  primary: "#2563EB",
-  text: "#111827",
-  subText: "#6B7280",
-  border: "#E5E7EB",
-  error: "#DC2626",
+  bg: '#F5F5F5',
+  card: '#FFFFFF',
+  primary: '#FF5722',
+  accent: '#76ABAE',
+  text: '#303841',
+  subText: '#6B7280',
+  border: '#E6E6E6',
+  error: '#DC2626',
 };
 
 const darkColors = {
-  bg: "#0F172A",
-  card: "#1E293B",
-  primary: "#3B82F6",
-  text: "#E5E7EB",
-  subText: "#9CA3AF",
-  border: "#334155",
-  error: "#F87171",
+  bg: '#1F2428',
+  card: '#2A3136',
+  primary: '#FF5722',
+  accent: '#76ABAE',
+  text: '#F5F5F5',
+  subText: '#B8BDC1',
+  border: '#3A4349',
+  error: '#F87171',
 };
 
 const LoginScreen: React.FC = () => {
@@ -106,7 +108,7 @@ const LoginScreen: React.FC = () => {
 
     try {
       setVerifyingOtp(true);
-      const response = await login({token: otpToken, code: otp.trim()});
+      const response = await login({ token: otpToken, code: otp.trim() });
       router.replace('/(tabs)');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to verify OTP. Please try again.';
@@ -180,80 +182,92 @@ const LoginScreen: React.FC = () => {
 
 
   return (
-     <ScrollView
-  contentContainerStyle={styles.scrollContent}
-  showsVerticalScrollIndicator={false}
->
-      <View style={[styles.content, { backgroundColor: colors.card }]}> 
-        <Text style={[styles.title, { color: colors.primary }]}>School MIS</Text>
-        <Text style={[styles.subtitle, { color: colors.subText }]}>Management System</Text>
+    <ScrollView
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View
+        style={[
+          styles.content,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+          },
+        ]}>
+        <Text style={[styles.title, { color: colors.text }]}>
+          School MIS
+        </Text>
+
+        <Text style={[styles.subtitle, { color: colors.subText }]}>
+          Sign in to continue
+        </Text>
 
         {/* <View style={[styles.switchBar, { borderColor: colors.border }]}>
-          <TouchableOpacity style={[styles.switchItem, { backgroundColor: colors.primary }]} disabled>
+          <TouchableOpacity style={[styles.switchItem, { backgroundColor: '#FF5722' }]} disabled>
             <Text style={[styles.switchTextActive]}>Login</Text>
           </TouchableOpacity>
         </View> */}
 
         <View style={styles.form}>
           <View>
-          <Controller
-            control={control}
-            name="username"
-            rules={{
-              required: 'Username is required',
-              validate: (value) => value.trim().length >= 5 || 'Username must be at least 5 characters',
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    borderColor: errors.username ? colors.error : colors.border,
-                    color: colors.text,
-                    backgroundColor: scheme === 'dark' ? '#020617' : '#fff',
-                  },
-                ]}
-                placeholder="Username"
-                placeholderTextColor={colors.subText}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                editable={!isLoading}
-                autoCapitalize="none"
-              />
-            )}
-          />
+            <Controller
+              control={control}
+              name="username"
+              rules={{
+                required: 'Username is required',
+                validate: (value) => value.trim().length >= 5 || 'Username must be at least 5 characters',
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: errors.username ? colors.error : colors.border,
+                      color: colors.text,
+                      backgroundColor: scheme === 'dark' ? '#020617' : '#fff',
+                    },
+                  ]}
+                  placeholder="Username"
+                  placeholderTextColor={colors.subText}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  editable={!isLoading}
+                  autoCapitalize="none"
+                />
+              )}
+            />
           </View>
           {errors.username && <Text style={[styles.errorText, { color: colors.error }]}>{errors.username.message}</Text>}
 
           <View >
-          <Controller
-            control={control}
-            name="password"
-            rules={{
-              required: 'Password is required',
-              validate: (value) => isValidPassword(value) || 'Password must be at least 6 characters',
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    borderColor: errors.password ? colors.error : colors.border,
-                    color: colors.text,
-                    backgroundColor: scheme === 'dark' ? '#020617' : '#fff',
-                  },
-                ]}
-                placeholder="Password"
-                placeholderTextColor={colors.subText}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                secureTextEntry
-                editable={!isLoading}
-              />
-            )}
-          />
+            <Controller
+              control={control}
+              name="password"
+              rules={{
+                required: 'Password is required',
+                validate: (value) => isValidPassword(value) || 'Password must be at least 6 characters',
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: errors.password ? colors.error : colors.border,
+                      color: colors.text,
+                      backgroundColor: scheme === 'dark' ? '#020617' : '#fff',
+                    },
+                  ]}
+                  placeholder="Password"
+                  placeholderTextColor={colors.subText}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  secureTextEntry
+                  editable={!isLoading}
+                />
+              )}
+            />
           </View>
           {errors.password && <Text style={[styles.errorText, { color: colors.error }]}>{errors.password.message}</Text>}
 
@@ -261,7 +275,7 @@ const LoginScreen: React.FC = () => {
             <TouchableOpacity
               style={[
                 styles.button,
-                { backgroundColor: colors.primary },
+                { backgroundColor: '#FF5722' },
                 (isLoading || sendingOtp) && styles.buttonDisabled,
               ]}
               onPress={handleSubmit(onSubmit)}
@@ -315,7 +329,7 @@ const LoginScreen: React.FC = () => {
 
               <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
                 <TouchableOpacity
-                  style={[styles.button, { backgroundColor: colors.primary, flex: 1 }]}
+                  style={[styles.button, { backgroundColor: '#FF5722', flex: 1 }]}
                   onPress={onVerifyOtp}
                   disabled={verifyingOtp}
                 >
@@ -329,7 +343,12 @@ const LoginScreen: React.FC = () => {
                     setOtpToken('');
                   }}
                 >
-                  <Text style={[styles.buttonText, { color: colors.primary }]}>Cancel</Text>
+                  <Text
+                    style={{
+                      color: '#303841',
+                      fontSize: 14,
+                      fontWeight: '600',
+                    }}>Cancel</Text>
                 </TouchableOpacity>
               </View>
 
@@ -413,7 +432,7 @@ const LoginScreen: React.FC = () => {
           </View>
         </View>
       </View>
-      </ScrollView>
+    </ScrollView>
   );
 };
 
@@ -427,23 +446,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   content: {
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
+    borderRadius: 10,
+    padding: 22,
+    borderWidth: 1,
   },
+
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
+
   subtitle: {
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 22,
+    lineHeight: 20,
   },
   form: {
     marginBottom: 16,
@@ -471,19 +490,20 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
     marginBottom: 10,
-    fontSize: 15,
+    fontSize: 14,
   },
   errorText: {
     fontSize: 12,
     marginBottom: 6,
   },
+
   button: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 8,
+    paddingVertical: 13,
     alignItems: 'center',
     marginTop: 6,
   },
@@ -492,8 +512,8 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
   },
   forgotWrap: {
     marginTop: 14,
@@ -526,7 +546,7 @@ const styles = StyleSheet.create({
   },
   footerLinkText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   otpRow: {
     flexDirection: 'row',
@@ -534,13 +554,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   otpInput: {
-    width: 48,
-    height: 48,
+    width: 46,
+    height: 46,
     borderWidth: 1,
     borderRadius: 8,
     textAlign: 'center',
     fontSize: 18,
-    padding: 8,
   },
 });
 

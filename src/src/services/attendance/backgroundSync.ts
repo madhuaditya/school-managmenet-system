@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 
 import { startAttendanceSync } from './attendanceSyncWorker';
+import { logError } from '../logger';
 
 const TASK_NAME = 'attendance-background-sync';
 
@@ -21,6 +22,7 @@ export const configureAttendanceBackgroundSync = async () => {
           await startAttendanceSync();
           return BackgroundFetch.BackgroundFetchResult.NewData;
         } catch (error) {
+          await logError(error);
           console.error('Background attendance sync failed:', error);
           return BackgroundFetch.BackgroundFetchResult.Failed;
         }
@@ -35,6 +37,7 @@ export const configureAttendanceBackgroundSync = async () => {
 
     backgroundSyncConfigured = true;
   } catch (error) {
+    await logError(error);
     console.error('Background attendance sync unavailable:', error);
   }
 };

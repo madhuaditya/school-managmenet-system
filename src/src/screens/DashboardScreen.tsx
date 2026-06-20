@@ -48,7 +48,7 @@ const DashboardScreen: React.FC = () => {
   const handleLogout = async () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     await logout();
-    router.replace('/');
+    router.replace('/feedback');
   };
 
   const roleLabel =

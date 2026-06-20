@@ -8,6 +8,14 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CONTACT_DETAILS } from '../src/constants/siteContent';
 
+const APP_COLORS = {
+  text: '#303841',
+  accent: '#76ABAE',
+  cta: '#FF5722',
+  background: '#F5F5F5',
+  border: '#E6E6E6',
+};
+
 export default function ContactScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
@@ -70,23 +78,60 @@ export default function ContactScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.icon }]}>
-          <ThemedText type="title">Contact Us</ThemedText>
-          <ThemedText style={styles.text}>
-            Contact us for school onboarding, partnership discussion, and product support. You can also use the
-            feedback form to help us improve.
+        <View style={styles.card}>
+          <ThemedText style={styles.heroTitle}>
+            Contact Us
+          </ThemedText>
+
+          <ThemedText style={styles.heroDescription}>
+            Questions about onboarding, partnerships, support, or product
+            feedback? We'd be happy to help and usually respond within
+            1–2 business days.
           </ThemedText>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.icon }]}>
-          <ThemedText type="defaultSemiBold">Reach Us</ThemedText>
-          <ThemedText style={styles.contactText}>Email: {CONTACT_DETAILS.email}</ThemedText>
-          <ThemedText style={styles.contactText}>Phone: {CONTACT_DETAILS.phone}</ThemedText>
-          <ThemedText style={styles.contactText}>Address: {CONTACT_DETAILS.address}</ThemedText>
+        <View style={styles.card}>
+          <ThemedText style={styles.sectionTitle}>
+            Reach Us
+          </ThemedText>
+
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.infoLabel}>Email</ThemedText>
+            <ThemedText style={styles.infoValue}>
+              {CONTACT_DETAILS.email}
+            </ThemedText>
+          </View>
+
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.infoLabel}>Phone</ThemedText>
+            <ThemedText style={styles.infoValue}>
+              {CONTACT_DETAILS.phone}
+            </ThemedText>
+          </View>
+
+          <View
+            style={[
+              styles.infoRow,
+              {
+                borderBottomWidth: 0,
+                paddingBottom: 0,
+              },
+            ]}>
+            <ThemedText style={styles.infoLabel}>Address</ThemedText>
+            <ThemedText style={styles.infoValue}>
+              {CONTACT_DETAILS.address}
+            </ThemedText>
+          </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.icon }]}>
-          <ThemedText type="defaultSemiBold">Contact Form</ThemedText>
+        <View style={styles.card}>
+          <ThemedText style={styles.sectionTitle}>
+            Send a Message
+          </ThemedText>
+
+          <ThemedText style={styles.sectionSubtitle}>
+            Tell us how we can help.
+          </ThemedText>
 
           <View style={styles.field}>
             <ThemedText style={styles.label}>Name</ThemedText>
@@ -94,7 +139,7 @@ export default function ContactScreen() {
               value={form.name}
               onChangeText={(value) => updateField('name', value)}
               placeholder="Your name"
-              placeholderTextColor={theme.icon}
+              placeholderTextColor="#9AA0A6"
               style={[styles.input, { borderColor: theme.icon, color: theme.text }]}
             />
           </View>
@@ -105,7 +150,7 @@ export default function ContactScreen() {
               value={form.email}
               onChangeText={(value) => updateField('email', value)}
               placeholder="you@example.com"
-              placeholderTextColor={theme.icon}
+              placeholderTextColor="#9AA0A6"
               keyboardType="email-address"
               autoCapitalize="none"
               style={[styles.input, { borderColor: theme.icon, color: theme.text }]}
@@ -118,7 +163,7 @@ export default function ContactScreen() {
               value={form.phone}
               onChangeText={(value) => updateField('phone', value)}
               placeholder="10-digit mobile number"
-              placeholderTextColor={theme.icon}
+              placeholderTextColor="#9AA0A6"
               keyboardType="phone-pad"
               maxLength={10}
               style={[styles.input, { borderColor: theme.icon, color: theme.text }]}
@@ -131,7 +176,7 @@ export default function ContactScreen() {
               value={form.message}
               onChangeText={(value) => updateField('message', value)}
               placeholder="How can we help?"
-              placeholderTextColor={theme.icon}
+              placeholderTextColor="#9AA0A6"
               multiline
               numberOfLines={4}
               textAlignVertical="top"
@@ -142,15 +187,32 @@ export default function ContactScreen() {
           <TouchableOpacity
             onPress={submitContact}
             disabled={loading}
-            style={[styles.button, { backgroundColor: theme.tint, opacity: loading ? 0.75 : 1 }]}>
-            {loading ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.buttonText}>Submit Contact Request</ThemedText>}
+            style={[
+              styles.button,
+              {
+                opacity: loading ? 0.75 : 1,
+              },
+            ]}>
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <ThemedText style={styles.buttonText}>
+                Submit Request
+              </ThemedText>
+            )}
           </TouchableOpacity>
 
-          {resultMessage ? (
-            <ThemedText style={[styles.resultText, { color: isError ? '#DC2626' : '#059669' }]}>
-              {resultMessage}
-            </ThemedText>
-          ) : null}
+         {resultMessage ? (
+          <ThemedText
+            style={[
+              styles.resultText,
+              {
+                color: isError ? '#D14343' : '#76ABAE',
+              },
+            ]}>
+            {resultMessage}
+          </ThemedText>
+        ) : null}
         </View>
       </ScrollView>
     </ThemedView>
@@ -160,63 +222,120 @@ export default function ContactScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F5F5F5',
     paddingHorizontal: 16,
     paddingTop: 12,
   },
+
   content: {
-    gap: 16,
-    paddingBottom: 24,
+    paddingBottom: 32,
   },
+
   card: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderRadius: 16,
+    borderColor: '#E6E6E6',
+    borderRadius: 10,
     padding: 16,
-    gap: 12,
+    marginBottom: 14,
   },
+
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#303841',
+    marginBottom: 6,
+  },
+
+  heroDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#5F6670',
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#303841',
+    marginBottom: 4,
+  },
+
+  sectionSubtitle: {
+    fontSize: 13,
+    color: '#7A7A7A',
+    marginBottom: 12,
+  },
+
+  infoRow: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E6E6E6',
+  },
+
+  infoLabel: {
+    fontSize: 12,
+    color: '#7A7A7A',
+    marginBottom: 2,
+  },
+
+  infoValue: {
+    fontSize: 14,
+    color: '#303841',
+    fontWeight: '500',
+  },
+
   field: {
-    gap: 6,
+    marginBottom: 14,
   },
+
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    color: '#555',
+    fontWeight: '500',
+    marginBottom: 5,
   },
+
   input: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: '#E6E6E6',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 14,
+    color: '#303841',
   },
+
   textArea: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 120,
+    borderColor: '#E6E6E6',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 110,
     fontSize: 14,
+    color: '#303841',
   },
+
   button: {
-    minHeight: 46,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#FF5722',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    marginTop: 6,
   },
+
   buttonText: {
-    color: '#fff',
-    fontWeight: '700',
+    color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '600',
   },
+
   resultText: {
+    marginTop: 10,
     fontSize: 13,
     lineHeight: 18,
-  },
-  text: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  contactText: {
-    fontSize: 14,
-    lineHeight: 20,
   },
 });

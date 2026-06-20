@@ -39,6 +39,8 @@ import {
 } from '@/src/types';
 // import { useAuthStore } from '@/src/store/auth.store';
 import { forceLogoutAndRedirect } from '../src/services/sessionManager';
+import { logError } from '@/src/services/logger';
+import { clearStoredSession } from '@/src/services/sessionManager';
 type RefreshResponse = ApiResponse<{ accessToken: string }>;
 type SalaryHistoryPagination = {
   page: number;
@@ -88,6 +90,7 @@ class ApiService {
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
+        await logError(error);
         if (error.response?.status === 401 || error.response?.status === 444) {
           // Clear persisted zustand store and legacy keys on unauthorized/forced logout.
           await forceLogoutAndRedirect();
@@ -224,6 +227,7 @@ class ApiService {
   }
 
   async logout(refreshToken: string): Promise<ApiResponse<null>> {
+    await clearStoredSession(); // Clear local storage/session data on logout
     return this.post('/auth/logout', { refreshToken });
   }
 
@@ -691,6 +695,7 @@ class ApiService {
     userId: string;
     startDate: string;
     endDate: string;
+    leaveType: string;
     reason: string;
   }): Promise<ApiResponse<LeaveRequest>> {
     return this.post('/leave/apply', payload);

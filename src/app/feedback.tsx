@@ -70,20 +70,37 @@ export default function FeedbackScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.icon }]}>
-          <ThemedText type="title">Feedback Form</ThemedText>
-          <ThemedText style={styles.text}>Share your experience and suggestions to help us improve.</ThemedText>
-          <ThemedText style={styles.smallNote}>We use feedback to improve {BRAND.name} for schools and staff.</ThemedText>
+        <View style={styles.card}>
+          <ThemedText style={styles.heroTitle}>
+            Feedback
+          </ThemedText>
+
+          <ThemedText style={styles.heroDescription}>
+            Help us improve your experience by sharing feedback,
+            suggestions, or ideas.
+          </ThemedText>
+
+          <ThemedText style={styles.smallNote}>
+            Every submission is reviewed by our team and helps shape
+            future improvements to {BRAND.name}.
+          </ThemedText>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.icon }]}>
+       <View style={styles.card}>
+        <ThemedText style={styles.sectionTitle}>
+          Share Your Experience
+        </ThemedText>
+
+        <ThemedText style={styles.sectionSubtitle}>
+          Your feedback helps us build a better product.
+        </ThemedText>
           <View style={styles.field}>
             <ThemedText style={styles.label}>Name</ThemedText>
             <TextInput
               value={form.name}
               onChangeText={(value) => updateField('name', value)}
               placeholder="Your name"
-              placeholderTextColor={theme.icon}
+              placeholderTextColor="#9AA0A6"
               style={[styles.input, { borderColor: theme.icon, color: theme.text }]}
             />
           </View>
@@ -94,43 +111,48 @@ export default function FeedbackScreen() {
               value={form.email}
               onChangeText={(value) => updateField('email', value)}
               placeholder="you@example.com"
-              placeholderTextColor={theme.icon}
+              placeholderTextColor="#9AA0A6"
               keyboardType="email-address"
               autoCapitalize="none"
               style={[styles.input, { borderColor: theme.icon, color: theme.text }]}
             />
           </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.label}>Rating</ThemedText>
-            <View style={styles.ratingRow}>
-              {[
-                ['5', '5 - Excellent'],
-                ['4', '4 - Very Good'],
-                ['3', '3 - Good'],
-                ['2', '2 - Fair'],
-                ['1', '1 - Needs Improvement'],
-              ].map(([value, label]) => {
-                const selected = form.rating === value;
-                return (
-                  <TouchableOpacity
-                    key={value}
-                    onPress={() => updateField('rating', value)}
+         <View style={styles.field}>
+          <ThemedText style={styles.label}>
+            Overall Rating
+          </ThemedText>
+
+          <View style={styles.ratingRow}>
+            {[
+              ['5', 'Excellent'],
+              ['4', 'Very Good'],
+              ['3', 'Good'],
+              ['2', 'Fair'],
+              ['1', 'Needs Work'],
+            ].map(([value, label]) => {
+              const selected = form.rating === value;
+
+              return (
+                <TouchableOpacity
+                  key={value}
+                  onPress={() => updateField('rating', value)}
+                  style={[
+                    styles.ratingCard,
+                    selected && styles.selectedRatingCard,
+                  ]}>
+                  <ThemedText
                     style={[
-                      styles.ratingPill,
-                      {
-                        borderColor: selected ? theme.tint : theme.icon,
-                        backgroundColor: selected ? `${theme.tint}15` : 'transparent',
-                      },
+                      styles.ratingText,
+                      selected && styles.selectedRatingText,
                     ]}>
-                    <ThemedText style={[styles.ratingText, { color: selected ? theme.tint : theme.text }]}>
-                      {label}
-                    </ThemedText>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                    {value} ★ {label}
+                  </ThemedText>
+                </TouchableOpacity>
+              );
+            })}
           </View>
+        </View>
 
           <View style={styles.field}>
             <ThemedText style={styles.label}>Feedback Message</ThemedText>
@@ -138,7 +160,7 @@ export default function FeedbackScreen() {
               value={form.message}
               onChangeText={(value) => updateField('message', value)}
               placeholder="Tell us what worked well or what should improve"
-              placeholderTextColor={theme.icon}
+              placeholderTextColor="#9AA0A6"
               multiline
               numberOfLines={5}
               textAlignVertical="top"
@@ -146,15 +168,32 @@ export default function FeedbackScreen() {
             />
           </View>
 
-          <TouchableOpacity
-            onPress={submitFeedback}
-            disabled={loading}
-            style={[styles.button, { backgroundColor: theme.tint, opacity: loading ? 0.75 : 1 }]}>
-            {loading ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.buttonText}>Submit Feedback</ThemedText>}
-          </TouchableOpacity>
+         <TouchableOpacity
+          onPress={submitFeedback}
+          disabled={loading}
+          style={[
+            styles.button,
+            {
+              opacity: loading ? 0.75 : 1,
+            },
+          ]}>
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <ThemedText style={styles.buttonText}>
+              Submit Feedback
+            </ThemedText>
+          )}
+        </TouchableOpacity>
 
           {resultMessage ? (
-            <ThemedText style={[styles.resultText, { color: isError ? '#DC2626' : '#059669' }]}>
+            <ThemedText
+              style={[
+                styles.resultText,
+                {
+                  color: isError ? '#D14343' : '#76ABAE',
+                },
+              ]}>
               {resultMessage}
             </ThemedText>
           ) : null}
@@ -167,77 +206,138 @@ export default function FeedbackScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F5F5F5',
     paddingHorizontal: 16,
     paddingTop: 12,
   },
+
   content: {
-    gap: 16,
-    paddingBottom: 24,
+    paddingBottom: 32,
   },
+
   card: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderRadius: 16,
+    borderColor: '#E6E6E6',
+    borderRadius: 10,
     padding: 16,
-    gap: 12,
+    marginBottom: 14,
   },
+
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#303841',
+    marginBottom: 6,
+  },
+
+  heroDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#606975',
+  },
+
+  smallNote: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#8A8A8A',
+    marginTop: 8,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#303841',
+    marginBottom: 4,
+  },
+
+  sectionSubtitle: {
+    fontSize: 13,
+    color: '#7A7A7A',
+    marginBottom: 14,
+  },
+
   field: {
-    gap: 6,
+    marginBottom: 14,
   },
+
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
+    color: '#555',
+    marginBottom: 5,
   },
+
   input: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: '#E6E6E6',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 14,
+    color: '#303841',
   },
+
   textArea: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 128,
+    borderColor: '#E6E6E6',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 120,
     fontSize: 14,
+    color: '#303841',
   },
+
   ratingRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  ratingPill: {
+
+  ratingCard: {
     borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 9,
+    borderColor: '#E6E6E6',
+    borderRadius: 8,
+    paddingVertical: 10,
     paddingHorizontal: 12,
   },
+
+  selectedRatingCard: {
+    borderColor: '#76ABAE',
+    backgroundColor: '#76ABAE15',
+  },
+
   ratingText: {
     fontSize: 12,
+    color: '#303841',
+    fontWeight: '500',
+  },
+
+  selectedRatingText: {
+    color: '#76ABAE',
     fontWeight: '600',
   },
+
   button: {
-    minHeight: 46,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#FF5722',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    marginTop: 6,
   },
+
   buttonText: {
-    color: '#fff',
-    fontWeight: '700',
+    color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '600',
   },
+
   resultText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  text: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  smallNote: {
+    marginTop: 10,
     fontSize: 13,
     lineHeight: 18,
   },
